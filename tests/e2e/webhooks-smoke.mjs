@@ -260,23 +260,30 @@ await step("Admin: Integrações mostra URLs, status e avisos recebidos", async 
   const link = await must(sb.auth.admin.generateLink({ type: "magiclink", email: "e2e-wh-admin@lc.test" }));
   await page.goto(`${BASE}/auth/confirm?token_hash=${link.properties.hashed_token}&type=email&next=/admin/integracoes`);
   await page.waitForURL(`${BASE}/admin/integracoes`);
-  await page.getByText(`${BASE}/api/webhooks/kiwify`).waitFor();
   assert((await page.getByText("Ativa", { exact: true }).count()) >= 3, "Kiwify, Hotmart e Yampi deveriam estar ativas");
-  await page.getByText("MERCADOPAGO_ACCESS_TOKEN").first().waitFor();
+  await page.screenshot({
+    caret: "initial",
+    path: `${process.env.E2E_SHOTS_DIR ?? "test-results/shots"}/c1-integracoes.png`,
+    fullPage: true,
+  });
+  // Card abre a configuração da plataforma
+  await page.getByRole("link", { name: /Kiwify/ }).click();
+  await page.waitForURL(`${BASE}/admin/integracoes/kiwify`);
+  await page.getByText(`${BASE}/api/webhooks/kiwify`).waitFor();
+  assert(!(await page.content()).includes("//api/webhooks"), "URL com barra dupla");
   await page.getByText("order_refunded").first().waitFor();
   await page.getByText("Produto não ligado a nenhuma turma").first().waitFor();
+  await page.screenshot({ caret: "initial", path: `${process.env.E2E_SHOTS_DIR ?? "test-results/shots"}/c1b-kiwify.png`, fullPage: true });
+  await page.goto(`${BASE}/admin/integracoes/mercadopago`);
+  await page.getByText("MERCADOPAGO_ACCESS_TOKEN").first().waitFor();
   // Teste do webhook de saída pelo botão
+  await page.goto(`${BASE}/admin/integracoes/funil`);
   await page.getByRole("button", { name: "Enviar teste" }).first().click();
   await page.getByText(/Teste entregue \(HTTP 200\)/).waitFor();
   assert(
     received.some((r) => r.event === "test" && r.valid),
     "teste não chegou",
   );
-  await page.screenshot({
-    caret: "initial",
-    path: `${process.env.E2E_SHOTS_DIR ?? "test-results/shots"}/c1-integracoes.png`,
-    fullPage: true,
-  });
 
   // Ficha do aluno com acompanhamento
   const carla = await must(sb.from("profiles").select("id").eq("email", "e2e-wh-carla@lc.test").single());

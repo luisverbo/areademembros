@@ -28,7 +28,7 @@ export async function createOutgoingWebhook(_prev: FormState | undefined, formDa
   const supabase = await createClient();
   const { error } = await supabase.from("outgoing_webhooks").insert({ name: parsed.data.name, url: parsed.data.url!, events });
   if (error) return { ok: false, message: dbErrorMessage(error) };
-  revalidatePath("/admin/integracoes");
+  revalidatePath("/admin/integracoes", "layout");
   return { ok: true, message: "Webhook criado. Copie o segredo para validar a assinatura no destino." };
 }
 
@@ -36,14 +36,14 @@ export async function toggleOutgoingWebhook(id: string, active: boolean) {
   await requireAdmin();
   const supabase = await createClient();
   await supabase.from("outgoing_webhooks").update({ is_active: active }).eq("id", id);
-  revalidatePath("/admin/integracoes");
+  revalidatePath("/admin/integracoes", "layout");
 }
 
 export async function deleteOutgoingWebhook(id: string) {
   await requireAdmin();
   const supabase = await createClient();
   await supabase.from("outgoing_webhooks").delete().eq("id", id);
-  revalidatePath("/admin/integracoes");
+  revalidatePath("/admin/integracoes", "layout");
 }
 
 export async function testOutgoingWebhook(id: string): Promise<FormState> {
@@ -52,7 +52,7 @@ export async function testOutgoingWebhook(id: string): Promise<FormState> {
   const { data: hook } = await supabase.from("outgoing_webhooks").select("id, url, secret").eq("id", id).single();
   if (!hook) return { ok: false, message: "Webhook não encontrado." };
   const result = await deliver(hook, "test", { message: "Teste enviado pelo admin da LC.Academy" });
-  revalidatePath("/admin/integracoes");
+  revalidatePath("/admin/integracoes", "layout");
   return result.error
     ? { ok: false, message: `O destino não aceitou: ${result.error}.` }
     : { ok: true, message: `Teste entregue (HTTP ${result.status}).` };
