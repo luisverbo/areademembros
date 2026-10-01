@@ -21,7 +21,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
         </div>
         <div className="flex items-center gap-5">
           <Link href="/" className="text-fg-muted hover:text-fg hidden text-sm sm:inline">
-            Ver como aluno
+            Área do aluno
           </Link>
           <UserMenu profile={profile} />
         </div>

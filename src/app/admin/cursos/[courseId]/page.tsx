@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/admin/page-header";
 import { Badge } from "@/components/ui/badge";
-import { LinkButton } from "@/components/ui/button";
+import { buttonClasses, LinkButton } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ConfirmSubmit } from "@/components/ui/confirm-submit";
 import { requireAdmin } from "@/lib/auth";
@@ -46,7 +46,14 @@ export default async function CoursePage({ params }: PageProps<"/admin/cursos/[c
       <PageHeader
         title={course.title}
         back={{ href: "/admin/cursos", label: "Cursos" }}
-        actions={course.is_published ? <Badge>Publicado</Badge> : <Badge tone="muted">Rascunho</Badge>}
+        actions={
+          <>
+            {course.is_published ? <Badge>Publicado</Badge> : <Badge tone="muted">Rascunho</Badge>}
+            <a href={`/curso/${course.slug}`} target="_blank" rel="noopener noreferrer" className={buttonClasses("secondary", "sm")}>
+              Ver como aluno ↗
+            </a>
+          </>
+        }
       />
       <div className="flex flex-col gap-6">
         <CourseForm course={course} cohorts={cohorts ?? []} lessons={allLessons} />

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/admin/page-header";
+import { buttonClasses } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ConfirmSubmit } from "@/components/ui/confirm-submit";
 import { requireAdmin } from "@/lib/auth";
@@ -34,7 +35,15 @@ export default async function LessonPage({ params }: Props) {
 
   return (
     <>
-      <PageHeader title={lesson.title} back={{ href: `/admin/cursos/${courseId}`, label: course.title }} />
+      <PageHeader
+        title={lesson.title}
+        back={{ href: `/admin/cursos/${courseId}`, label: course.title }}
+        actions={
+          <a href={`/aula/${lesson.id}`} target="_blank" rel="noopener noreferrer" className={buttonClasses("secondary", "sm")}>
+            Ver como aluno ↗
+          </a>
+        }
+      />
       <div className="flex flex-col gap-6">
         <LessonForm courseId={courseId} lesson={lesson} content={content} modules={modules} />
         <Materials lessonId={lesson.id} courseId={courseId} materials={materials ?? []} />

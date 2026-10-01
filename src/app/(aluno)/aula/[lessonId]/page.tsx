@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChevronIcon, FileIcon, LockIcon } from "@/components/icons";
+import { AdminPreviewBar } from "@/components/student/admin-preview-bar";
 import { Countdown } from "@/components/student/countdown";
 import { LessonListItem } from "@/components/student/lesson-list-item";
 import { VideoPlayer } from "@/components/student/video-player";
@@ -75,7 +76,7 @@ export default async function LessonPage({ params }: Props) {
   const supabase = await createClient();
   const [{ data: content }, { data: details }, { data: materials }, { data: comments }] = await Promise.all([
     supabase.from("lesson_contents").select("video_provider, video_id").eq("lesson_id", lessonId).maybeSingle(),
-    supabase.from("lessons").select("description").eq("id", lessonId).maybeSingle(),
+    supabase.from("lessons").select("description, is_published").eq("id", lessonId).maybeSingle(),
     supabase.from("lesson_materials").select("id, name").eq("lesson_id", lessonId).order("position"),
     supabase.rpc("lesson_comments", { p_lesson_id: lessonId, p_cohort_id: view.cohort?.id }),
   ]);
@@ -90,103 +91,108 @@ export default async function LessonPage({ params }: Props) {
   }));
   const rootCount = commentItems.filter((c) => !c.parentId).length;
 
+  const drafts = [!course.is_published && "o curso", details && !details.is_published && "esta aula"].filter(Boolean) as string[];
+
   return (
-    <main className="mx-auto grid max-w-7xl items-start gap-6 px-4 py-6 md:px-10 lg:grid-cols-[minmax(0,1fr)_380px]">
-      <div className="flex min-w-0 flex-col gap-5 lg:col-start-1">
-        {embed ? (
-          <VideoPlayer
-            key={lessonId}
-            provider={embed.provider}
-            src={embed.src}
-            lessonId={lessonId}
-            title={lesson.title}
-            startAt={lesson.completed ? 0 : lesson.lastPositionSeconds}
-          />
-        ) : (
-          <div className="border-border bg-surface text-fg-muted flex aspect-video items-center justify-center rounded-[var(--radius-card)] border px-6 text-center">
-            O vídeo desta aula ainda não está disponível.
-          </div>
-        )}
+    <>
+      {profile.role === "admin" ? <AdminPreviewBar editHref={`/admin/cursos/${course.id}/aulas/${lessonId}`} drafts={drafts} /> : null}
+      <main className="mx-auto grid max-w-7xl items-start gap-6 px-4 py-6 md:px-10 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="flex min-w-0 flex-col gap-5 lg:col-start-1">
+          {embed ? (
+            <VideoPlayer
+              key={lessonId}
+              provider={embed.provider}
+              src={embed.src}
+              lessonId={lessonId}
+              title={lesson.title}
+              startAt={lesson.completed ? 0 : lesson.lastPositionSeconds}
+            />
+          ) : (
+            <div className="border-border bg-surface text-fg-muted flex aspect-video items-center justify-center rounded-[var(--radius-card)] border px-6 text-center">
+              O vídeo desta aula ainda não está disponível.
+            </div>
+          )}
 
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <Link href={`/curso/${course.slug}`} className="text-fg-muted hover:text-fg w-fit text-sm">
-              {course.title}
-              {view.cohort ? <span className="text-accent"> · {view.cohort.name}</span> : null}
-            </Link>
-            <h1 className="text-2xl font-bold md:text-3xl">{lesson.title}</h1>
-            <p className="text-fg-muted text-sm">
-              Aula {index + 1} de {view.lessons.length} · {lesson.moduleTitle}
-            </p>
-          </div>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <Link href={`/curso/${course.slug}`} className="text-fg-muted hover:text-fg w-fit text-sm">
+                {course.title}
+                {view.cohort ? <span className="text-accent"> · {view.cohort.name}</span> : null}
+              </Link>
+              <h1 className="text-2xl font-bold md:text-3xl">{lesson.title}</h1>
+              <p className="text-fg-muted text-sm">
+                Aula {index + 1} de {view.lessons.length} · {lesson.moduleTitle}
+              </p>
+            </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <CompleteButton key={`${lessonId}-${lesson.completed}`} lessonId={lessonId} completed={lesson.completed} />
-            {next ? (
-              <LinkButton href={`/aula/${next.id}`} variant="light">
-                Próxima aula <ChevronIcon />
-              </LinkButton>
-            ) : null}
-            {prev ? (
-              <LinkButton href={`/aula/${prev.id}`} variant="ghost" size="sm">
-                <ChevronIcon direction="left" /> Anterior
-              </LinkButton>
-            ) : null}
-            {view.cohort?.live_url ? (
-              <a href={view.cohort.live_url} target="_blank" rel="noopener noreferrer" className={buttonClasses("ghost", "sm")}>
-                Link da live
-              </a>
-            ) : null}
-          </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <CompleteButton key={`${lessonId}-${lesson.completed}`} lessonId={lessonId} completed={lesson.completed} />
+              {next ? (
+                <LinkButton href={`/aula/${next.id}`} variant="light">
+                  Próxima aula <ChevronIcon />
+                </LinkButton>
+              ) : null}
+              {prev ? (
+                <LinkButton href={`/aula/${prev.id}`} variant="ghost" size="sm">
+                  <ChevronIcon direction="left" /> Anterior
+                </LinkButton>
+              ) : null}
+              {view.cohort?.live_url ? (
+                <a href={view.cohort.live_url} target="_blank" rel="noopener noreferrer" className={buttonClasses("ghost", "sm")}>
+                  Link da live
+                </a>
+              ) : null}
+            </div>
 
-          {details?.description ? <p className="text-fg-soft max-w-3xl whitespace-pre-line">{details.description}</p> : null}
+            {details?.description ? <p className="text-fg-soft max-w-3xl whitespace-pre-line">{details.description}</p> : null}
+          </div>
         </div>
-      </div>
 
-      {/* Celular: lista de aulas logo abaixo do vídeo. Desktop: coluna da direita. */}
-      <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
-        <LessonSidebar lessons={lessonList} />
-      </div>
+        {/* Celular: lista de aulas logo abaixo do vídeo. Desktop: coluna da direita. */}
+        <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+          <LessonSidebar lessons={lessonList} />
+        </div>
 
-      <div className="flex min-w-0 flex-col gap-5 lg:col-start-1">
-        <div className="flex flex-col gap-3">
-          {materials?.length ? (
-            <details className="group border-border bg-surface rounded-[var(--radius-card)] border">
+        <div className="flex min-w-0 flex-col gap-5 lg:col-start-1">
+          <div className="flex flex-col gap-3">
+            {materials?.length ? (
+              <details className="group border-border bg-surface rounded-[var(--radius-card)] border">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold">
+                  <span className="inline-flex items-center gap-2">
+                    <FileIcon className="text-fg-muted" /> Materiais ({materials.length})
+                  </span>
+                  <ChevronIcon className="text-fg-muted transition-transform group-open:rotate-90" />
+                </summary>
+                <ul className="border-border border-t p-2">
+                  {materials.map((m) => (
+                    <li key={m.id}>
+                      <a
+                        href={`/aula/${lessonId}/material/${m.id}`}
+                        className="text-fg-soft hover:bg-surface-2 hover:text-fg flex items-center gap-2 rounded-lg px-2 py-2 text-sm"
+                      >
+                        <FileIcon className="text-fg-muted shrink-0" />
+                        <span className="min-w-0 truncate">{m.name}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
+
+            <details className="group border-border bg-surface rounded-[var(--radius-card)] border" open={rootCount > 0}>
               <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold">
-                <span className="inline-flex items-center gap-2">
-                  <FileIcon className="text-fg-muted" /> Materiais ({materials.length})
+                <span>
+                  {view.cohort ? "Comentários da turma" : "Comentários"} ({rootCount})
                 </span>
                 <ChevronIcon className="text-fg-muted transition-transform group-open:rotate-90" />
               </summary>
-              <ul className="border-border border-t p-2">
-                {materials.map((m) => (
-                  <li key={m.id}>
-                    <a
-                      href={`/aula/${lessonId}/material/${m.id}`}
-                      className="text-fg-soft hover:bg-surface-2 hover:text-fg flex items-center gap-2 rounded-lg px-2 py-2 text-sm"
-                    >
-                      <FileIcon className="text-fg-muted shrink-0" />
-                      <span className="min-w-0 truncate">{m.name}</span>
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              <div className="border-border border-t p-4">
+                <Comments comments={commentItems} lessonId={lessonId} cohortId={view.cohort?.id ?? null} myId={profile.id} />
+              </div>
             </details>
-          ) : null}
-
-          <details className="group border-border bg-surface rounded-[var(--radius-card)] border" open={rootCount > 0}>
-            <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-semibold">
-              <span>
-                {view.cohort ? "Comentários da turma" : "Comentários"} ({rootCount})
-              </span>
-              <ChevronIcon className="text-fg-muted transition-transform group-open:rotate-90" />
-            </summary>
-            <div className="border-border border-t p-4">
-              <Comments comments={commentItems} lessonId={lessonId} cohortId={view.cohort?.id ?? null} myId={profile.id} />
-            </div>
-          </details>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }

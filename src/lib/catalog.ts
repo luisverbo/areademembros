@@ -18,6 +18,7 @@ export type Course = Pick<
   | "is_free"
   | "showcase_order"
   | "sales_cohort_id"
+  | "is_published"
 >;
 
 /** Como o aluno chega ao curso. */
@@ -52,7 +53,7 @@ export type CourseView = {
 };
 
 const COURSE_FIELDS =
-  "id, slug, title, description, cover_vertical_url, cover_horizontal_url, banner_url, is_free, showcase_order, sales_cohort_id";
+  "id, slug, title, description, cover_vertical_url, cover_horizontal_url, banner_url, is_free, showcase_order, sales_cohort_id, is_published";
 
 /** Cursos publicados da vitrine, na ordem definida no admin. */
 export const getPublishedCourses = cache(async (): Promise<Course[]> => {

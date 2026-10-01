@@ -43,7 +43,8 @@ const errors = [];
 const ctx = await browser.newContext({ viewport: { width: 1360, height: 900 } });
 const page = await ctx.newPage();
 page.on("console", (m) => {
-  if (m.type() === "error") errors.push(m.text());
+  // Hosts de vídeo externos ficam bloqueados na rede do ambiente de teste.
+  if (m.type() === "error" && !/youtube|mediadelivery|net::ERR_/i.test(m.text())) errors.push(m.text());
 });
 page.on("pageerror", (e) => errors.push(String(e)));
 
@@ -129,6 +130,17 @@ await step("youtube on paid lesson is allowed with warning", async () => {
   await page.fill("#video_id", "https://youtu.be/dQw4w9WgXcQ");
   await page.click("text=Salvar aula");
   await page.getByText("Aula salva.").waitFor();
+});
+
+await step("preview lesson as student", async () => {
+  const lessonId = page.url().split("/aulas/")[1];
+  const href = await page.getByRole("link", { name: /Ver como aluno/ }).getAttribute("href");
+  if (href !== `/aula/${lessonId}`) throw new Error("preview href " + href);
+  await page.goto(`${BASE}/aula/${lessonId}`);
+  await page.getByText("Você está vendo como aluno").waitFor();
+  await page.locator("iframe[src*='youtube-nocookie.com/embed/dQw4w9WgXcQ']").waitFor({ state: "attached" });
+  await page.screenshot({ caret: "initial", path: `${SHOTS}/04b-preview.png` });
+  await page.goBack();
 });
 
 await step("material upload", async () => {

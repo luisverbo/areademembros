@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PlayIcon } from "@/components/icons";
+import { AdminPreviewBar } from "@/components/student/admin-preview-bar";
 import { LessonListItem } from "@/components/student/lesson-list-item";
 import { ProgressBar } from "@/components/student/progress-bar";
 import { buttonClasses, LinkButton } from "@/components/ui/button";
@@ -36,6 +37,9 @@ export default async function CoursePage({ params }: Props) {
 
   return (
     <main className="pb-16">
+      {profile.role === "admin" ? (
+        <AdminPreviewBar editHref={`/admin/cursos/${course.id}`} drafts={course.is_published ? [] : ["o curso"]} />
+      ) : null}
       <section className="border-border relative isolate overflow-hidden border-b">
         <div className="absolute inset-0 -z-10">
           {image ? (
