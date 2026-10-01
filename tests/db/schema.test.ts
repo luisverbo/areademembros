@@ -319,6 +319,7 @@ describe("cálculo da liberação (America/Sao_Paulo)", () => {
     await as(db, bobId, async () => {
       await expect(db.query("select * from cohort_lessons_for_user($1, $2)", [c, carolId])).rejects.toThrow(/forbidden/);
     });
+    await q("delete from enrollments where user_id = $1 and cohort_id = $2", [carolId, c]);
   });
 });
 
@@ -450,5 +451,50 @@ describe("funções de matrícula e turma", () => {
     );
     expect(rows.map((r) => r.lesson_id)).toEqual([lessons[2], lessons[1]]);
     expect(rows[0].release_at?.toISOString()).toBe("2026-11-02T22:00:00.000Z");
+  });
+});
+
+describe("regras de acesso (decisões de 01/10)", () => {
+  it("aluno não fica ativo em duas turmas do mesmo curso", async () => {
+    // Alice está ativa na turma A; tentar a turma B do mesmo curso falha
+    await expect(q("select enroll_user($1, $2, 'manual')", [aliceId, cohortB])).rejects.toThrow(/outra turma deste curso/);
+  });
+
+  it("pode entrar em outra turma do curso depois que a anterior deixa de valer", async () => {
+    await q("update enrollments set status = 'refunded' where user_id = $1 and cohort_id = $2", [aliceId, cohortA]);
+    await q("select enroll_user($1, $2, 'manual')", [aliceId, cohortB]);
+    // Reativar a A agora conflita com a B ativa
+    await expect(q("update enrollments set status = 'active' where user_id = $1 and cohort_id = $2", [aliceId, cohortA])).rejects.toThrow(
+      /outra turma deste curso/,
+    );
+    // Volta ao estado original
+    await q("delete from enrollments where user_id = $1 and cohort_id = $2", [aliceId, cohortB]);
+    await q("update enrollments set status = 'active' where user_id = $1 and cohort_id = $2", [aliceId, cohortA]);
+  });
+
+  it("cursos diferentes: pode ter várias matrículas ativas", async () => {
+    const [{ id: other }] = await q<{ id: string }>("insert into courses (slug, title) values ('minicurso-ig', 'Minicurso') returning id");
+    const [{ id: oc }] = await q<{ id: string }>("insert into cohorts (course_id, name) values ($1, 'Perpétua') returning id", [other]);
+    await q("select enroll_user($1, $2, 'purchase')", [aliceId, oc]);
+    const [{ n }] = await q<{ n: number }>("select count(*)::int as n from enrollments where user_id = $1 and status = 'active'", [
+      aliceId,
+    ]);
+    expect(n).toBe(2);
+    await q("delete from courses where id = $1", [other]);
+  });
+
+  it("prazo de acesso pode contar do início da turma", async () => {
+    const start = "2026-12-01T12:00:00.000Z";
+    const [{ id: c }] = await q<{ id: string }>(
+      "insert into cohorts (course_id, name, access_months, access_starts_from, starts_at) values ($1, 'Mentoria T2', 6, 'cohort_start', $2) returning id",
+      [courseId, start],
+    );
+    const dave = await createUser(db, "dave@lc.test");
+    const [e] = await q<{ expires_at: Date }>("select * from enroll_user($1, $2, 'purchase')", [dave, c]);
+    expect(e.expires_at.toISOString()).toBe("2027-06-01T12:00:00.000Z");
+    // duplicar preserva a escolha
+    const [{ id }] = await q<{ id: string }>("select duplicate_cohort($1) as id", [c]);
+    const [copy] = await q<{ access_starts_from: string }>("select access_starts_from from cohorts where id = $1", [id]);
+    expect(copy.access_starts_from).toBe("cohort_start");
   });
 });

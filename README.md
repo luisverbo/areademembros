@@ -60,10 +60,8 @@ tests/db, tests/e2e             testes de banco e de navegador
 - **Vídeo nunca fica no servidor**: Bunny Stream para aulas pagas; YouTube só para conteúdo grátis (validado no admin).
 - **Nenhuma chave no código**: tudo em variáveis de ambiente (`.env.example`). `SUPABASE_SERVICE_ROLE_KEY` só no servidor.
 
-## Configuração do Supabase em produção (quando o projeto for criado)
+## Configuração do Supabase em produção
 
-1. Aplicar as migrações (`npx supabase link` + `npx supabase db push`).
-2. Authentication → URL Configuration: Site URL = domínio; Redirect URLs = `https://<domínio>/**`.
-3. Authentication → Emails → Magic Link: colar `supabase/templates/magic_link.html`.
-4. Authentication → SMTP: configurar o Resend (domínio autenticado).
-5. Authentication → Sign In: desativar cadastro público por e-mail (contas nascem na compra, no cadastro grátis ou pelo admin).
+Passo a passo em [`docs/SUPABASE-SETUP.md`](docs/SUPABASE-SETUP.md). O banco é instalado colando
+`supabase/setup/01-instalar-banco.sql` no SQL Editor. Esse arquivo é gerado a partir das migrações com
+`node scripts/build-setup-sql.mjs`; gere de novo sempre que uma migração mudar.

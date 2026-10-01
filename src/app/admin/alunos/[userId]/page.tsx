@@ -46,6 +46,8 @@ export default async function StudentPage({ params }: Props) {
 
   const allCohorts = (cohorts ?? []).map((c) => ({ id: c.id, courseId: c.course_id, label: `${c.course?.title} · ${c.name}` }));
   const enrolledCohortIds = new Set((enrollments ?? []).map((e) => e.cohort_id));
+  // Regra: uma matrícula ativa por curso. Para trocar de turma, edita-se a matrícula existente.
+  const activeCourseIds = new Set((enrollments ?? []).filter((e) => e.status === "active").map((e) => e.cohort?.course_id));
   const lessonOptions = (courses ?? []).flatMap((c) =>
     c.modules.flatMap((m) => m.lessons.map((l) => ({ id: l.id, label: `${c.title} · ${m.title} · ${l.title}` }))),
   );
@@ -102,7 +104,10 @@ export default async function StudentPage({ params }: Props) {
                 </form>
               </div>
             ))}
-            <EnrollStudentForm userId={profile.id} cohorts={allCohorts.filter((c) => !enrolledCohortIds.has(c.id))} />
+            <EnrollStudentForm
+              userId={profile.id}
+              cohorts={allCohorts.filter((c) => !enrolledCohortIds.has(c.id) && !activeCourseIds.has(c.courseId))}
+            />
           </div>
         </Card>
 

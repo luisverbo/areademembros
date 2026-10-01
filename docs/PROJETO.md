@@ -52,7 +52,7 @@ Além de entregar as aulas, a área **vende**: o aluno vê o portfólio inteiro,
 | Vídeos pagos | **Bunny Stream** (player embedado, token de acesso com validade, restrito ao domínio) |
 | Vídeos grátis | YouTube embed |
 | Pagamento | Checkout externo → webhook. **Multi-plataforma:** Kiwify, Hotmart, Yampi, Mercado Pago e Asaas (um adaptador por provedor, núcleo único de matrícula). |
-| WhatsApp | **API oficial do WhatsApp** (decisão de 01/10/2026). Só entra na Etapa 3. |
+| WhatsApp | **API oficial do WhatsApp** (principal). **Z-API** como opção alternativa configurável. Evolution não será usada. Só entra na Etapa 3. |
 | E-mail | **Resend** com domínio autenticado (também usado como SMTP do Supabase Auth para o link mágico) |
 | IA | Transcrição automática de cada aula (ex.: Whisper) + modelo de linguagem (API da Anthropic) para tutor, busca, resumos e análises |
 | Estilo | Tailwind CSS |
@@ -86,6 +86,8 @@ Use isto como ponto de partida e proponha ajustes na Etapa 1.
 
 - `users` vira **`profiles`**, ligada a `auth.users` do Supabase.
 - **Liberação calculada na leitura**, por função no banco usada pela RLS (sem depender de cron). O cron só dispara avisos.
+- `cohorts.access_starts_from`: prazo de acesso conta da compra ou do início da turma.
+- Uma matrícula ativa por aluno por curso (trigger no banco).
 - `lessons.is_free` (aula grátis avulsa) e campos do **botão de oferta** na aula (minuto, texto, link).
 - **`lesson_unlocks`**: liberar uma aula para um aluno específico.
 - **`cohort_products`**: liga turma ↔ produto de cada provedor (uma turma pode ser vendida em mais de uma plataforma).
@@ -151,7 +153,11 @@ Admin: duplicar turma com um clique, liberar uma aula para um aluno específico,
 
 ### Cursos e aulas grátis
 - Admin marca curso/aula como grátis e gera **link público**.
-- Visitante faz **cadastro rápido** (nome, e-mail, WhatsApp, aceite de mensagens) → vira lead.
+- Visitante faz **cadastro rápido** → vira lead. O admin escolhe, **por curso grátis**, a estratégia de entrada:
+  - **Quais dados pedir:** só e-mail · só WhatsApp · nome + e-mail · nome + e-mail + WhatsApp (sempre com aceite de mensagens).
+  - **Como entra:** **direto** (digitou, já assiste) ou **confirmando pelo link mágico** no e-mail.
+  - Segurança do modo direto: se o e-mail/WhatsApp digitado já pertence a um aluno pagante ou admin, exige o link mágico (ninguém entra na conta de outro só digitando o e-mail dele).
+- **Webhook de saída de lead:** a cada lead captado, a área envia um POST (assinado) para uma URL configurável no admin — ex.: o funil do FunilPro — com nome, e-mail, WhatsApp, curso e origem, para disparar automações.
 - Dentro, assiste o grátis e vê **todo o portfólio travado**; pode comprar ali mesmo.
 
 ### Outros
@@ -227,7 +233,7 @@ Construir **uma etapa por vez**. Cada etapa termina com: tudo funcionando, testa
 Objetivo: a primeira turma da mentoria consegue rodar aqui. Entregue em três partes, cada uma aprovada antes da próxima:
 - **1A — Fundação e admin de conteúdo:** setup, banco + RLS, login, admin de cursos/módulos/aulas/materiais/capas, admin de turmas (liberação, aulas da turma, produtos), duplicar turma, matrícula manual, mudar aluno de turma.
 - **1B — Experiência do aluno:** vitrine, página da aula, progresso, cadeado com data, comentários por turma, materiais, liberar aula para um aluno.
-- **1C — Vendas, grátis e acompanhamento:** webhooks dos 5 provedores, e-mail de acesso, expiração, curso grátis + lead, ficha do aluno.
+- **1C — Vendas, grátis e acompanhamento:** webhooks dos 5 provedores, e-mail de acesso, expiração, curso grátis + lead (estratégia de entrada configurável), webhook de saída de leads (FunilPro), ficha do aluno.
 
 Lista completa:
 - Setup do projeto (Next.js + Supabase + Tailwind), estrutura de pastas, variáveis de ambiente, `docs/PROJETO.md` salvo.
@@ -251,7 +257,7 @@ Lista completa:
 - **Radar de Comentários** (classificação, alertas, relatório semanal).
 
 ### Etapa 3 — Relacionamento, vendas e retenção
-- **Central de Mensagens:** envios manuais com filtros + IA para escrever; automações (inativo 3 dias, aula liberada, concluiu, grátis sem compra); WhatsApp pela API oficial (individual e em massa); e-mail transacional; LGPD (aceite e descadastro).
+- **Central de Mensagens:** envios manuais com filtros + IA para escrever; automações (inativo 3 dias, aula liberada, concluiu, grátis sem compra); WhatsApp pela API oficial (Z-API como alternativa); e-mail transacional; LGPD (aceite e descadastro).
 - **Recomendação** de próximo curso.
 - **Certificados.**
 - **Painel de desempenho** (abandono por aula, vendas internas, comparação entre turmas).
@@ -265,7 +271,7 @@ Lista completa:
 - **Vídeo nunca pode ser baixado.** Bunny com token + domínio restrito. YouTube só para grátis.
 - **Nunca hospedar vídeo no servidor.**
 - **Reembolso/chargeback remove o acesso automaticamente.**
-- **WhatsApp só pela API oficial** (individual e em massa).
+- **WhatsApp pela API oficial** (individual e em massa); Z-API só como alternativa opcional.
 - **LGPD:** aceite de mensagens no cadastro; link de descadastro em todo e-mail.
 - **Depoimentos** extraídos de comentários só com autorização do aluno.
 - **Webhooks idempotentes** e com validação de assinatura.
@@ -281,7 +287,11 @@ Decididas em 01/10/2026:
 
 - [x] Pagamento: **Kiwify, Hotmart, Yampi, Mercado Pago e Asaas**, todas via webhook. Cada turma pode ter um ou mais produtos ligados (de qualquer provedor).
 - [x] E-mail transacional: **Resend**.
-- [x] WhatsApp: **API oficial**, só na Etapa 3. Nas Etapas 1 e 2, avisos de acesso e alertas saem por e-mail.
+- [x] WhatsApp: **API oficial**, com **Z-API** como opção alternativa (Evolution descartada). Só na Etapa 3; nas Etapas 1 e 2, avisos saem por e-mail.
+- [x] Lead do curso grátis: estratégia **configurável por curso** (dados pedidos + entrada direta ou por link mágico) e **webhook de saída** para o funil (Etapa 1C).
+- [x] Prazo de acesso: **configurável por turma** — da compra de cada aluno (padrão) ou do início da turma.
+- [x] Um aluno só pode ter **uma matrícula ativa por curso** (garantido no banco). Em cursos diferentes, quantas quiser.
+- [x] Supabase de produção criado pelo Luís em conta própria; configuração por SQL Editor (`supabase/setup/`).
 - [x] Nome provisório: **LC.Academy** (trocável por variável de ambiente).
 - [x] Supabase: projeto próprio, região São Paulo (`sa-east-1`). Fuso fixo `America/Sao_Paulo`.
 - [x] Ajustes no modelo de dados (seção 3.1) aprovados.
@@ -292,9 +302,6 @@ Ainda abertas:
 - [ ] Domínio definitivo.
 - [ ] Conta no Bunny Stream (chave de Token Authentication). Até lá, testes com YouTube.
 - [ ] Mockups "grafite" (imagens) para reproduzir fielmente.
-- [ ] Lead do curso grátis entra direto ou confirma o e-mail antes.
-- [ ] Prazo de acesso conta da compra ou do início da turma.
-- [ ] Aluno em duas turmas do mesmo curso.
 
 ---
 

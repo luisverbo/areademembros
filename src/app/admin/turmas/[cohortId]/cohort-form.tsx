@@ -103,11 +103,19 @@ export function CohortForm({ cohort }: { cohort: Tables<"cohorts"> }) {
             </Select>
           </Field>
           {access === "months" ? (
-            <Field label="Meses" htmlFor="access_months" error={e.access_months} hint="Contados da entrada de cada aluno.">
-              <Input id="access_months" name="access_months" type="number" min={1} defaultValue={cohort.access_months ?? 12} />
-            </Field>
+            <>
+              <Field label="Meses" htmlFor="access_months" error={e.access_months}>
+                <Input id="access_months" name="access_months" type="number" min={1} defaultValue={cohort.access_months ?? 12} />
+              </Field>
+              <Field label="Contando a partir" htmlFor="access_starts_from" error={e.access_starts_from}>
+                <Select id="access_starts_from" name="access_starts_from" defaultValue={cohort.access_starts_from}>
+                  <option value="purchase">Da compra de cada aluno</option>
+                  <option value="cohort_start">Do início da turma</option>
+                </Select>
+              </Field>
+            </>
           ) : (
-            <div className="max-md:hidden" />
+            <div className="max-md:hidden md:col-span-2" />
           )}
           <Field
             label="Link do checkout"

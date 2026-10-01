@@ -165,6 +165,16 @@ await step("create weekly cohort", async () => {
 });
 const cohortUrl = page.url();
 
+await step("access period from cohort start", async () => {
+  await page.selectOption("#access", "months");
+  await page.fill("#access_months", "6");
+  await page.selectOption("#access_starts_from", "cohort_start");
+  await page.click("text=Salvar turma");
+  await page.getByText("Turma salva.").waitFor();
+  await page.reload();
+  if ((await page.inputValue("#access_starts_from")) !== "cohort_start") throw new Error("access_starts_from not saved");
+});
+
 await step("exclude a lesson from cohort", async () => {
   await page.getByRole("checkbox", { name: /Incluir Primeira automação/ }).uncheck();
   await page.click("text=Salvar aulas da turma");

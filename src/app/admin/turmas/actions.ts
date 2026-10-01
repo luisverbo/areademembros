@@ -69,6 +69,10 @@ const updateSchema = z.object({
   ends_at: optionalDateTime(),
   access: z.enum(["lifetime", "months"]),
   access_months: formFields.optionalInt(1),
+  access_starts_from: z
+    .enum(["purchase", "cohort_start"])
+    .nullable()
+    .transform((v) => v ?? "purchase"),
   checkout_url: formFields.optionalUrl(),
   live_url: formFields.optionalUrl(),
   is_active: formFields.checkbox(),
@@ -78,7 +82,7 @@ export async function updateCohort(cohortId: string, _prev: FormState | undefine
   await requireAdmin();
   const parsed = parseForm(updateSchema, formData);
   if (!parsed.success) return parsed.state;
-  const { weekday, time, interval_days, access, access_months, ...d } = parsed.data;
+  const { weekday, time, interval_days, access, access_months, access_starts_from, ...d } = parsed.data;
 
   let release_config: Record<string, string | number> = {};
   if (d.release_mode === "weekly") {
@@ -91,6 +95,9 @@ export async function updateCohort(cohortId: string, _prev: FormState | undefine
   if (access === "months" && !access_months) {
     return { ok: false, errors: { access_months: ["Informe em quantos meses o acesso expira."] } };
   }
+  if (access === "months" && access_starts_from === "cohort_start" && !d.starts_at) {
+    return { ok: false, errors: { access_starts_from: ["Para contar do início da turma, preencha a data de início."] } };
+  }
   if (d.starts_at && d.ends_at && d.ends_at <= d.starts_at) {
     return { ok: false, errors: { ends_at: ["O fim precisa ser depois do início."] } };
   }
@@ -98,7 +105,7 @@ export async function updateCohort(cohortId: string, _prev: FormState | undefine
   const supabase = await createClient();
   const { error } = await supabase
     .from("cohorts")
-    .update({ ...d, release_config, access_months: access === "months" ? access_months : null })
+    .update({ ...d, release_config, access_months: access === "months" ? access_months : null, access_starts_from })
     .eq("id", cohortId);
   if (error) return { ok: false, message: dbErrorMessage(error) };
 

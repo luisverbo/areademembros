@@ -9,15 +9,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json;
-          operationName?: string;
-          query?: string;
-          variables?: Json;
-        };
-        Returns: Json;
-      };
+      graphql: { Args: { extensions?: Json; operationName?: string; query?: string; variables?: Json }; Returns: Json };
     };
     Enums: {
       [_ in never]: never;
@@ -105,6 +97,7 @@ export type Database = {
       cohorts: {
         Row: {
           access_months: number | null;
+          access_starts_from: Database["public"]["Enums"]["access_start"];
           checkout_url: string | null;
           course_id: string;
           created_at: string;
@@ -121,6 +114,7 @@ export type Database = {
         };
         Insert: {
           access_months?: number | null;
+          access_starts_from?: Database["public"]["Enums"]["access_start"];
           checkout_url?: string | null;
           course_id: string;
           created_at?: string;
@@ -137,6 +131,7 @@ export type Database = {
         };
         Update: {
           access_months?: number | null;
+          access_starts_from?: Database["public"]["Enums"]["access_start"];
           checkout_url?: string | null;
           course_id?: string;
           created_at?: string;
@@ -709,10 +704,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      assert_admin_or_service: {
-        Args: Record<PropertyKey, never>;
-        Returns: undefined;
-      };
+      assert_admin_or_service: { Args: Record<PropertyKey, never>; Returns: undefined };
       can_access_lesson: { Args: { p_lesson_id: string }; Returns: boolean };
       cohort_lessons_for_user: {
         Args: { p_cohort_id: string; p_user_id?: string };
@@ -752,30 +744,15 @@ export type Database = {
           isSetofReturn: false;
         };
       };
-      enrollment_is_active: {
-        Args: { e: Database["public"]["Tables"]["enrollments"]["Row"] };
-        Returns: boolean;
-      };
+      enrollment_is_active: { Args: { e: Database["public"]["Tables"]["enrollments"]["Row"] }; Returns: boolean };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
-      is_enrolled_in_cohort: {
-        Args: { p_cohort_id: string };
-        Returns: boolean;
-      };
+      is_enrolled_in_cohort: { Args: { p_cohort_id: string }; Returns: boolean };
       lesson_course_id: { Args: { p_lesson_id: string }; Returns: string };
-      lesson_release_at: {
-        Args: {
-          p_cohort_id: string;
-          p_enrolled_at: string;
-          p_lesson_id: string;
-        };
-        Returns: string;
-      };
-      set_cohort_lessons: {
-        Args: { p_cohort_id: string; p_items: Json };
-        Returns: undefined;
-      };
+      lesson_release_at: { Args: { p_cohort_id: string; p_enrolled_at: string; p_lesson_id: string }; Returns: string };
+      set_cohort_lessons: { Args: { p_cohort_id: string; p_items: Json }; Returns: undefined };
     };
     Enums: {
+      access_start: "purchase" | "cohort_start";
       comment_category: "question" | "complaint" | "praise" | "request" | "technical";
       enrollment_origin: "purchase" | "free" | "manual";
       enrollment_status: "active" | "refunded" | "expired";
@@ -804,9 +781,7 @@ export type Tables<
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never) = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R;
@@ -828,9 +803,7 @@ export type TablesInsert<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never) = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I;
     }
@@ -851,9 +824,7 @@ export type TablesUpdate<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never) = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
-}
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U;
     }
@@ -874,9 +845,7 @@ export type Enums<
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never) = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
-}
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
@@ -889,9 +858,7 @@ export type CompositeTypes<
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never) = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
-}
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
@@ -903,6 +870,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      access_start: ["purchase", "cohort_start"],
       comment_category: ["question", "complaint", "praise", "request", "technical"],
       enrollment_origin: ["purchase", "free", "manual"],
       enrollment_status: ["active", "refunded", "expired"],

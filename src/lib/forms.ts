@@ -100,6 +100,9 @@ export function dbErrorMessage(error: { code?: string; message: string }, fallba
   if (error.code === "23514") return "Algum valor está fora do permitido. Revise os campos.";
   if (error.code === "42501") return "Você não tem permissão para esta ação.";
   if (error.message?.includes("não pertence ao curso")) return "A aula escolhida não pertence ao curso desta turma.";
+  if (error.message?.includes("outra turma deste curso")) {
+    return "O aluno já tem matrícula ativa em outra turma deste curso. Use “mudar de turma” na ficha do aluno.";
+  }
   return fallback;
 }
 
