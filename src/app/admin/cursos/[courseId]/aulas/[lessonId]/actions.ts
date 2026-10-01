@@ -7,7 +7,9 @@ import { z } from "zod";
 import type { FormState } from "@/components/ui/form-message";
 import { requireAdmin } from "@/lib/auth";
 import { dbErrorMessage, formFields, parseForm } from "@/lib/forms";
+import { isAiConfigured } from "@/lib/ai/client";
 import { generateLessonSummary } from "@/lib/ai/lesson-summary";
+import { parseChecklistLines, parseSummaryLines } from "@/lib/summary-text";
 import { createClient } from "@/lib/supabase/server";
 import { parseTranscript } from "@/lib/transcript";
 import { normalizeVideoId } from "@/lib/video";
@@ -127,6 +129,8 @@ export async function saveTranscript(
   const raw = String(formData.get("transcript") ?? "");
   if (raw.length > 2_000_000) return { ok: false, message: "Transcrição muito grande (máx. 2 MB de texto)." };
   const parsed = parseTranscript(raw);
+  // IA só roda se houver chave configurada (decisão de 03/10/2026: não gastar com IA por padrão).
+  const aiOn = isAiConfigured();
 
   const supabase = await createClient();
   const { error: delError } = await supabase.from("lesson_transcript_segments").delete().eq("lesson_id", lessonId);
@@ -139,22 +143,20 @@ export async function saveTranscript(
       if (error) return { ok: false, message: dbErrorMessage(error) };
     }
   }
-  const { error } = await supabase
-    .from("lesson_contents")
-    .upsert({
-      lesson_id: lessonId,
-      transcript: parsed.text || null,
-      ai_status: parsed.segments.length ? "processing" : "idle",
-      ai_error: null,
-    });
+  const { error } = await supabase.from("lesson_contents").upsert({
+    lesson_id: lessonId,
+    transcript: parsed.text || null,
+    ai_status: parsed.segments.length ? "processing" : "idle",
+    ai_error: null,
+  });
   if (error) return { ok: false, message: dbErrorMessage(error) };
 
-  if (parsed.segments.length) after(() => generateLessonSummary(lessonId));
+  if (parsed.segments.length && aiOn) after(() => generateLessonSummary(lessonId));
   revalidatePath(`/admin/cursos/${courseId}/aulas/${lessonId}`);
   return {
     ok: true,
     message: parsed.segments.length
-      ? `Transcrição salva (${parsed.segments.length} trechos${parsed.hasTimestamps ? ", com minutos" : ", sem minutos"}). A IA está gerando o resumo.`
+      ? `Transcrição salva (${parsed.segments.length} trechos${parsed.hasTimestamps ? ", com minutos" : ", sem minutos"}).${aiOn ? " A IA está gerando o resumo." : ""}`
       : "Transcrição removida.",
   };
 }
@@ -165,4 +167,27 @@ export async function regenerateSummary(lessonId: string, courseId: string) {
   await supabase.from("lesson_contents").update({ ai_status: "processing", ai_error: null }).eq("lesson_id", lessonId);
   after(() => generateLessonSummary(lessonId));
   revalidatePath(`/admin/cursos/${courseId}/aulas/${lessonId}`);
+}
+
+/** Resumo e checklist escritos pelo admin (sem IA, sem custo). */
+export async function saveManualSummary(
+  lessonId: string,
+  courseId: string,
+  _prev: FormState | undefined,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+  const points = parseSummaryLines(String(formData.get("summary") ?? ""));
+  const checklist = parseChecklistLines(String(formData.get("checklist") ?? ""));
+  const supabase = await createClient();
+  const { error } = await supabase.from("lesson_contents").upsert({
+    lesson_id: lessonId,
+    ai_summary: points.length ? { points } : null,
+    ai_checklist: checklist.length ? checklist : null,
+    ai_status: points.length || checklist.length ? "ready" : "idle",
+    ai_error: null,
+  });
+  if (error) return { ok: false, message: dbErrorMessage(error) };
+  revalidatePath(`/admin/cursos/${courseId}/aulas/${lessonId}`);
+  return { ok: true, message: points.length || checklist.length ? "Resumo salvo. Já aparece na aula." : "Resumo removido." };
 }

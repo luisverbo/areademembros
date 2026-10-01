@@ -1,25 +1,16 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { SparkIcon } from "@/components/icons";
 import { cn } from "@/components/ui/cn";
 
-type Tab = "aulas" | "caderno" | "ia";
+type Tab = "aulas" | "caderno";
 
-/** Painel lateral com 3 abas: Aulas · Caderno · Professor IA. */
-export function LessonSidebar({ lessons, professor }: { lessons: ReactNode; professor?: ReactNode }) {
+/** Painel lateral: Aulas · Caderno. */
+export function LessonSidebar({ lessons }: { lessons: ReactNode }) {
   const [tab, setTab] = useState<Tab>("aulas");
   const tabs: { id: Tab; label: ReactNode }[] = [
     { id: "aulas", label: "Aulas" },
     { id: "caderno", label: "Caderno" },
-    {
-      id: "ia",
-      label: (
-        <span className="inline-flex items-center gap-1.5">
-          <SparkIcon width={14} height={14} className="text-accent" /> Professor IA
-        </span>
-      ),
-    },
   ];
 
   return (
@@ -46,11 +37,9 @@ export function LessonSidebar({ lessons, professor }: { lessons: ReactNode; prof
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="min-h-0 flex-1 overflow-y-auto p-2">
         {tab === "aulas" ? (
           lessons
-        ) : tab === "ia" && professor ? (
-          professor
         ) : (
           <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
-            <p className="font-display font-semibold">{tab === "caderno" ? "Caderno de anotações" : "Professor IA"}</p>
+            <p className="font-display font-semibold">Caderno de anotações</p>
             <p className="text-fg-muted text-sm">
               {tab === "caderno"
                 ? "Em breve: anote com o minuto da aula e volte ao ponto com um clique."

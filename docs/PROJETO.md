@@ -327,3 +327,10 @@ Ainda abertas:
 - **Professor IA:** uma conversa por aluno por aula, com a transcrição em cache (perguntas seguintes ficam mais baratas). Cita minutos `[mm:ss]` clicáveis.
 - **Limite:** 40 perguntas por aluno por dia (chat + busca), para controlar custo. Admin sem limite.
 - **Chave:** `ANTHROPIC_API_KEY` na Vercel. Sem ela, as telas mostram "em breve" e a busca mostra só os trechos encontrados.
+
+### Decisão de 03/10/2026: sem gasto com IA por padrão
+
+- **Professor IA removido** (aba, chat e rota). Motivo: custo.
+- **Resumo e checklist** passam a ser escritos pelo admin na tela da aula (sem custo). O botão "Gerar com IA" só aparece se um dia houver `ANTHROPIC_API_KEY`.
+- **Busca** ("Buscar nas aulas") funciona de graça, direto nas legendas (busca do Postgres). A resposta escrita por IA só aparece se houver chave.
+- Por consequência, ficam fora do escopo até nova decisão: "Organizar com IA" e "O que eu perdi?" no caderno, o Radar de Comentários com IA, a recomendação por IA, a IA nas mensagens e a capa gerada por IA. Versões sem IA serão propostas em cada etapa.

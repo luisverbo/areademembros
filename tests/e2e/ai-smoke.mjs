@@ -93,27 +93,22 @@ await step("admin envia a legenda e vê os trechos salvos", async () => {
   assert(JSON.stringify(segs.map((s) => s.start_seconds)) === "[5,150,310]", JSON.stringify(segs));
   // Sem chave da IA, a tela avisa o que falta
   await page.reload();
-  await page.getByText("IA não configurada: falta a variável ANTHROPIC_API_KEY").waitFor();
+  await page.getByText("Pontos principais (um por linha)").waitFor();
   await page.screenshot({ caret: "initial", path: `${SHOTS}/d1-admin-transcricao.png`, fullPage: true });
 });
 
-// Simula o resultado da IA (sem chave neste ambiente)
-await must(
-  sb
-    .from("lesson_contents")
-    .update({
-      ai_status: "ready",
-      ai_summary: {
-        points: [
-          { title: "Boas-vindas", detail: "O que você vai aprender.", start_seconds: 5 },
-          { title: "Conectar o WhatsApp", detail: "Ligando o número na ferramenta.", start_seconds: 150 },
-          { title: "Teste final", detail: "Envie uma mensagem para você.", start_seconds: 310 },
-        ],
-      },
-      ai_checklist: ["Conectar o número", "Enviar mensagem de teste"],
-    })
-    .eq("lesson_id", lesson.id),
-);
+await step("admin escreve o resumo e o checklist (sem IA)", async () => {
+  const page = await loginPage("e2e-ia-admin@lc.test", `/admin/cursos/${course.id}/aulas/${lesson.id}`);
+  await page.waitForURL(`${BASE}/admin/cursos/${course.id}/aulas/${lesson.id}`);
+  await page
+    .locator('textarea[name="summary"]')
+    .fill("0:05 Boas-vindas — o que você vai aprender\n2:30 Conectar o WhatsApp — ligando o número\n5:10 Teste final — envie uma mensagem");
+  await page.locator('textarea[name="checklist"]').fill("Conectar o número\nEnviar mensagem de teste");
+  await page.getByRole("button", { name: "Salvar resumo" }).click();
+  await page.getByText("Resumo salvo. Já aparece na aula.").waitFor();
+  const c = await must(sb.from("lesson_contents").select("ai_summary, ai_checklist").eq("lesson_id", lesson.id).single());
+  assert(c.ai_summary.points[1].start_seconds === 150 && c.ai_checklist.length === 2, JSON.stringify(c));
+});
 
 const student = await loginPage("e2e-ia-aluno@lc.test", `/aula/${lesson.id}`);
 
@@ -127,19 +122,18 @@ await step("aluno vê resumo com minutos e checklist que fica marcado", async ()
   await student.screenshot({ caret: "initial", path: `${SHOTS}/d2-aula-resumo.png`, fullPage: true });
 });
 
-await step("Professor IA mostra aviso enquanto a IA não está ativa", async () => {
-  await student.getByRole("tab", { name: /Professor IA/ }).click();
-  await student.getByText("Em breve: tire dúvidas sobre esta aula").waitFor();
+await step("Professor IA foi removido", async () => {
+  assert((await student.getByRole("tab", { name: /Professor IA/ }).count()) === 0, "aba do Professor IA ainda aparece");
   const res = await student.request.post(`${BASE}/api/professor`, { data: { lessonId: lesson.id, message: "oi" } });
-  assert(res.status() === 503, `esperava 503, veio ${res.status()}`);
+  assert(res.status() === 404, `esperava 404, veio ${res.status()}`);
 });
 
 await step("busca acha a aula e o minuto, com link direto", async () => {
-  await student.getByRole("link", { name: /Pergunte à IA/ }).click();
+  await student.getByRole("link", { name: /Buscar nas aulas/ }).click();
   await student.waitForURL(`${BASE}/busca`);
-  await student.getByLabel("Sua pergunta").fill("como conecto o whatsapp");
-  await student.getByRole("button", { name: "Perguntar" }).click();
-  await student.getByText("Todos os trechos encontrados (1)").waitFor();
+  await student.getByLabel("O que você procura").fill("como conecto o whatsapp");
+  await student.getByRole("button", { name: "Buscar", exact: true }).click();
+  await student.getByText("Trechos encontrados (1)").waitFor();
   const href = await student.locator(`a[href="/aula/${lesson.id}?t=150"]`).first().getAttribute("href");
   assert(href, "link para o minuto 2:30 não encontrado");
   await student.screenshot({ caret: "initial", path: `${SHOTS}/d3-busca.png`, fullPage: true });

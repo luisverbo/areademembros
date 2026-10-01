@@ -60,3 +60,12 @@ export function SparkIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function SearchIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...base} aria-hidden {...props}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="M20 20l-3.5-3.5" />
+    </svg>
+  );
+}

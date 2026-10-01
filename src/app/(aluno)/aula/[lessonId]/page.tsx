@@ -7,7 +7,6 @@ import { Countdown } from "@/components/student/countdown";
 import { LessonListItem } from "@/components/student/lesson-list-item";
 import { VideoPlayer } from "@/components/student/video-player";
 import { buttonClasses, LinkButton } from "@/components/ui/button";
-import { isAiConfigured } from "@/lib/ai/client";
 import { requireUser } from "@/lib/auth";
 import { getCourseByLessonId, getCourseView } from "@/lib/catalog";
 import { formatReleaseDate } from "@/lib/datetime";
@@ -16,7 +15,6 @@ import { embedFor } from "@/lib/video-embed";
 import { CompleteButton } from "./complete-button";
 import { Comments, type CommentItem } from "./comments";
 import { LessonSidebar } from "./lesson-sidebar";
-import { ProfessorChat } from "./professor-chat";
 import { LessonSummary } from "./lesson-summary";
 
 type Props = PageProps<"/aula/[lessonId]">;
@@ -87,15 +85,6 @@ export default async function LessonPage({ params, searchParams }: Props) {
     supabase.rpc("lesson_comments", { p_lesson_id: lessonId, p_cohort_id: view.cohort?.id }),
   ]);
 
-  const { data: conversation } = await supabase
-    .from("ai_conversations")
-    .select("ai_messages(role, content, created_at)")
-    .eq("user_id", profile.id)
-    .eq("lesson_id", lessonId)
-    .maybeSingle();
-  const chatHistory = (conversation?.ai_messages ?? [])
-    .sort((a, b) => a.created_at.localeCompare(b.created_at))
-    .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
   const embed = content ? embedFor(content.video_provider, content.video_id) : null;
   const summaryPoints = (
     (content?.ai_summary as { points?: { title: string; detail: string; start_seconds: number | null }[] } | null)?.points ?? []
@@ -170,10 +159,7 @@ export default async function LessonPage({ params, searchParams }: Props) {
 
         {/* Celular: lista de aulas logo abaixo do vídeo. Desktop: coluna da direita. */}
         <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
-          <LessonSidebar
-            lessons={lessonList}
-            professor={<ProfessorChat lessonId={lessonId} initial={chatHistory} enabled={isAiConfigured()} />}
-          />
+          <LessonSidebar lessons={lessonList} />
         </div>
 
         <div className="flex min-w-0 flex-col gap-5 lg:col-start-1">

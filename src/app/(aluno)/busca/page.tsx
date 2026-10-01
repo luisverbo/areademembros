@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { SparkIcon } from "@/components/icons";
+import { SearchIcon } from "@/components/icons";
 import { isAiConfigured } from "@/lib/ai/client";
 import { aiQuestionsUsedToday, DAILY_AI_QUESTIONS } from "@/lib/ai/limits";
 import { answerFromSegments, findSegments, type SearchHit } from "@/lib/ai/search";
@@ -9,7 +9,7 @@ import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatTimestamp } from "@/lib/transcript";
 
-export const metadata: Metadata = { title: "Pergunte à IA" };
+export const metadata: Metadata = { title: "Buscar nas aulas" };
 
 function HitCard({ hit, n }: { hit: SearchHit; n?: number }) {
   return (
@@ -70,20 +70,20 @@ export default async function SearchPage({ searchParams }: PageProps<"/busca">) 
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
       <div className="flex flex-col gap-2">
         <h1 className="flex items-center gap-2 text-2xl font-bold md:text-3xl">
-          <SparkIcon width={24} height={24} className="text-accent" /> Pergunte à IA
+          <SearchIcon width={24} height={24} className="text-accent" /> Buscar nas aulas
         </h1>
-        <p className="text-fg-muted">Pergunte do seu jeito. A IA procura em todas as suas aulas e mostra a aula e o minuto exato.</p>
+        <p className="text-fg-muted">Escreva o que você procura. Mostramos a aula e o minuto exato em que isso é falado.</p>
       </div>
       <form className="flex gap-2" role="search">
         <input
           name="q"
           defaultValue={query}
-          placeholder="Ex.: como conecto o WhatsApp?"
-          aria-label="Sua pergunta"
+          placeholder="Ex.: conectar WhatsApp"
+          aria-label="O que você procura"
           maxLength={300}
           className="border-border bg-surface-2 placeholder:text-fg-muted focus:border-fg-muted h-12 min-w-0 flex-1 rounded-lg border px-4 text-base focus:outline-none"
         />
-        <button className="bg-accent hover:bg-accent-hover h-12 shrink-0 rounded-lg px-5 font-semibold text-white">Perguntar</button>
+        <button className="bg-accent hover:bg-accent-hover h-12 shrink-0 rounded-lg px-5 font-semibold text-white">Buscar</button>
       </form>
 
       {query ? (
@@ -99,7 +99,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/busca">) 
           ) : null}
           {hits.length ? (
             <details className="group" open={!isAiConfigured() || limited}>
-              <summary className="text-fg-soft cursor-pointer text-sm font-semibold">Todos os trechos encontrados ({hits.length})</summary>
+              <summary className="text-fg-soft cursor-pointer text-sm font-semibold">Trechos encontrados ({hits.length})</summary>
               <div className="mt-3 flex flex-col gap-2">
                 {hits.map((hit, i) => (
                   <HitCard key={`${hit.lessonId}-${hit.startSeconds}-${i}`} hit={hit} n={i + 1} />

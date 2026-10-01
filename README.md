@@ -12,7 +12,7 @@ Stack: Next.js 16 (App Router) · TypeScript · Tailwind 4 · Supabase (Postgres
 | 1A — Fundação e admin de conteúdo | ✅ entregue |
 | 1B — Experiência do aluno (vitrine, curso, aula, progresso, comentários) | ✅ entregue |
 | 1C — Webhooks (Kiwify, Hotmart, Yampi, Mercado Pago, Asaas), e-mail (Resend), curso grátis + lead, webhooks de saída, ficha do aluno | ✅ entregue |
-| 2A — Transcrição, resumo e checklist por IA, Professor IA, busca inteligente | ✅ entregue para revisão |
+| 2A — Transcrição (legenda), resumo e checklist, busca nas aulas (Professor IA removido; IA só com chave) | ✅ entregue |
 | 2B — Caderno, prévia estilo trailer, botão de oferta no vídeo | próxima |
 | 2C — Radar de Comentários | depois |
 
