@@ -20,6 +20,27 @@ export type Database = {
   };
   public: {
     Tables: {
+      auth_email_log: {
+        Row: {
+          email: string;
+          id: number;
+          kind: string;
+          sent_at: string;
+        };
+        Insert: {
+          email: string;
+          id?: never;
+          kind: string;
+          sent_at?: string;
+        };
+        Update: {
+          email?: string;
+          id?: never;
+          kind?: string;
+          sent_at?: string;
+        };
+        Relationships: [];
+      };
       cohort_lessons: {
         Row: {
           cohort_id: string;
@@ -240,6 +261,8 @@ export type Database = {
           id: string;
           is_free: boolean;
           is_published: boolean;
+          lead_access: Database["public"]["Enums"]["lead_access"];
+          lead_fields: Database["public"]["Enums"]["lead_fields"];
           preview_end_seconds: number | null;
           preview_lesson_id: string | null;
           preview_start_seconds: number | null;
@@ -258,6 +281,8 @@ export type Database = {
           id?: string;
           is_free?: boolean;
           is_published?: boolean;
+          lead_access?: Database["public"]["Enums"]["lead_access"];
+          lead_fields?: Database["public"]["Enums"]["lead_fields"];
           preview_end_seconds?: number | null;
           preview_lesson_id?: string | null;
           preview_start_seconds?: number | null;
@@ -276,6 +301,8 @@ export type Database = {
           id?: string;
           is_free?: boolean;
           is_published?: boolean;
+          lead_access?: Database["public"]["Enums"]["lead_access"];
+          lead_fields?: Database["public"]["Enums"]["lead_fields"];
           preview_end_seconds?: number | null;
           preview_lesson_id?: string | null;
           preview_start_seconds?: number | null;
@@ -353,6 +380,48 @@ export type Database = {
           },
           {
             foreignKeyName: "enrollments_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      leads: {
+        Row: {
+          course_id: string | null;
+          created_at: string;
+          id: string;
+          source: string | null;
+          user_id: string;
+          utm: NonNullable<Json>;
+        };
+        Insert: {
+          course_id?: string | null;
+          created_at?: string;
+          id?: string;
+          source?: string | null;
+          user_id: string;
+          utm?: NonNullable<Json>;
+        };
+        Update: {
+          course_id?: string | null;
+          created_at?: string;
+          id?: string;
+          source?: string | null;
+          user_id?: string;
+          utm?: NonNullable<Json>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "leads_course_id_fkey";
+            columns: ["course_id"];
+            isOneToOne: false;
+            referencedRelation: "courses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "leads_user_id_fkey";
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
@@ -621,6 +690,36 @@ export type Database = {
           },
         ];
       };
+      outgoing_webhooks: {
+        Row: {
+          created_at: string;
+          events: string[];
+          id: string;
+          is_active: boolean;
+          name: string;
+          secret: string;
+          url: string;
+        };
+        Insert: {
+          created_at?: string;
+          events?: string[];
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          secret?: string;
+          url: string;
+        };
+        Update: {
+          created_at?: string;
+          events?: string[];
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          secret?: string;
+          url?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -662,6 +761,44 @@ export type Database = {
           whatsapp?: string | null;
         };
         Relationships: [];
+      };
+      webhook_deliveries: {
+        Row: {
+          created_at: string;
+          error: string | null;
+          event: string;
+          id: string;
+          payload: NonNullable<Json>;
+          status_code: number | null;
+          webhook_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          error?: string | null;
+          event: string;
+          id?: string;
+          payload: NonNullable<Json>;
+          status_code?: number | null;
+          webhook_id: string;
+        };
+        Update: {
+          created_at?: string;
+          error?: string | null;
+          event?: string;
+          id?: string;
+          payload?: NonNullable<Json>;
+          status_code?: number | null;
+          webhook_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "webhook_deliveries_webhook_id_fkey";
+            columns: ["webhook_id"];
+            isOneToOne: false;
+            referencedRelation: "outgoing_webhooks";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       webhook_events: {
         Row: {
@@ -706,6 +843,7 @@ export type Database = {
     Functions: {
       assert_admin_or_service: { Args: Record<PropertyKey, never>; Returns: undefined };
       can_access_lesson: { Args: { p_lesson_id: string }; Returns: boolean };
+      claim_auth_email: { Args: { p_email: string; p_kind: string }; Returns: boolean };
       cohort_lessons_for_user: {
         Args: { p_cohort_id: string; p_user_id?: string };
         Returns: {
@@ -805,6 +943,8 @@ export type Database = {
       comment_category: "question" | "complaint" | "praise" | "request" | "technical";
       enrollment_origin: "purchase" | "free" | "manual";
       enrollment_status: "active" | "refunded" | "expired";
+      lead_access: "direct" | "confirm_email";
+      lead_fields: "email" | "whatsapp" | "name_email" | "name_email_whatsapp";
       payment_provider: "kiwify" | "hotmart" | "yampi" | "mercadopago" | "asaas";
       release_mode: "all" | "weekly" | "fixed_date" | "days_after_join";
       user_role: "student" | "admin";
@@ -923,6 +1063,8 @@ export const Constants = {
       comment_category: ["question", "complaint", "praise", "request", "technical"],
       enrollment_origin: ["purchase", "free", "manual"],
       enrollment_status: ["active", "refunded", "expired"],
+      lead_access: ["direct", "confirm_email"],
+      lead_fields: ["email", "whatsapp", "name_email", "name_email_whatsapp"],
       payment_provider: ["kiwify", "hotmart", "yampi", "mercadopago", "asaas"],
       release_mode: ["all", "weekly", "fixed_date", "days_after_join"],
       user_role: ["student", "admin"],

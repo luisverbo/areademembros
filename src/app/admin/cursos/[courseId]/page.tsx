@@ -7,6 +7,7 @@ import { buttonClasses, LinkButton } from "@/components/ui/button";
 import { Card, CardHeader } from "@/components/ui/card";
 import { ConfirmSubmit } from "@/components/ui/confirm-submit";
 import { requireAdmin } from "@/lib/auth";
+import { env } from "@/lib/env";
 import { releaseModeLabels } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 import { deleteCourse } from "../actions";
@@ -56,7 +57,7 @@ export default async function CoursePage({ params }: PageProps<"/admin/cursos/[c
         }
       />
       <div className="flex flex-col gap-6">
-        <CourseForm course={course} cohorts={cohorts ?? []} lessons={allLessons} />
+        <CourseForm siteUrl={env.siteUrl} course={course} cohorts={cohorts ?? []} lessons={allLessons} />
 
         <ModulesEditor courseId={course.id} modules={modules ?? []} />
 

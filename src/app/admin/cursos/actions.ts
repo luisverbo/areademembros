@@ -44,6 +44,14 @@ const updateSchema = z.object({
   slug: slugField,
   description: formFields.optionalText(),
   is_free: formFields.checkbox(),
+  lead_fields: z
+    .enum(["email", "whatsapp", "name_email", "name_email_whatsapp"])
+    .nullable()
+    .transform((v) => v ?? undefined), // fora do formulário quando o curso não é grátis: mantém o que estava
+  lead_access: z
+    .enum(["direct", "confirm_email"])
+    .nullable()
+    .transform((v) => v ?? undefined),
   is_published: formFields.checkbox(),
   showcase_order: formFields.optionalInt(),
   sales_cohort_id: formFields.optionalUuid(),

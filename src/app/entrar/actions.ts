@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { sendAuthEmail } from "@/lib/auth-emails";
 import { env } from "@/lib/env";
 import { safeNextPath } from "@/lib/safe-redirect";
 import { createClient } from "@/lib/supabase/server";
@@ -19,6 +20,18 @@ export async function sendMagicLink(_prev: FormState | undefined, formData: Form
   }
 
   const next = safeNextPath(parsed.data.next);
+  const sentByUs = await sendAuthEmail(parsed.data.email, "login", next);
+  if (sentByUs === "failed") {
+    return { ok: false, message: "Não foi possível enviar o link agora. Tente novamente em instantes." };
+  }
+  if (sentByUs !== "not_configured") {
+    return {
+      ok: true,
+      message: `Se ${parsed.data.email} tiver acesso, você vai receber um link para entrar. Confira também o spam.`,
+    };
+  }
+
+  // Sem Resend configurado: e-mail padrão do Supabase.
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data.email,
@@ -85,6 +98,18 @@ export async function requestPasswordReset(_prev: FormState | undefined, formDat
     return { ok: false, errors: z.flattenError(parsed.error).fieldErrors };
   }
 
+  const sentByUs = await sendAuthEmail(parsed.data.email, "password");
+  if (sentByUs === "failed") {
+    return { ok: false, message: "Não foi possível enviar o link agora. Tente novamente em instantes." };
+  }
+  if (sentByUs !== "not_configured") {
+    return {
+      ok: true,
+      message: `Se ${parsed.data.email} tiver acesso, você vai receber um link para criar sua senha. Confira também o spam.`,
+    };
+  }
+
+  // Sem Resend configurado: e-mail padrão do Supabase.
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
     redirectTo: `${env.siteUrl}/auth/confirm?next=${encodeURIComponent("/conta/senha")}`,

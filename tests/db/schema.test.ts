@@ -557,3 +557,44 @@ describe("comentários com nome do autor", () => {
     expect(bob).toHaveLength(0);
   });
 });
+
+describe("leads e webhooks de saída (1C)", () => {
+  it("curso tem estratégia de captação padrão", async () => {
+    const [c] = await q<{ lead_fields: string; lead_access: string }>("select lead_fields, lead_access from courses where id = $1", [
+      courseId,
+    ]);
+    expect(c).toEqual({ lead_fields: "name_email_whatsapp", lead_access: "direct" });
+  });
+
+  it("só admin vê leads e webhooks; segredo gerado sozinho", async () => {
+    await q("insert into leads (user_id, course_id, source) values ($1, $2, 'gratis')", [carolId, courseId]);
+    const [w] = await q<{ secret: string }>(
+      "insert into outgoing_webhooks (name, url) values ('FunilPro', 'https://funil.test/hook') returning secret",
+    );
+    expect(w.secret).toMatch(/^[0-9a-f]{64}$/);
+    expect(await as(db, carolId, () => q("select * from leads"))).toHaveLength(0);
+    expect(await as(db, carolId, () => q("select * from outgoing_webhooks"))).toHaveLength(0);
+    expect((await as(db, adminId, () => q("select * from leads"))).length).toBeGreaterThan(0);
+  });
+
+  it("evento desconhecido é recusado", async () => {
+    await expect(q("insert into outgoing_webhooks (name, url, events) values ('x', 'https://x.test', array['coisa'])")).rejects.toThrow(
+      /check constraint/,
+    );
+  });
+});
+
+describe("limite de e-mails de acesso", () => {
+  it("segura reenvio em menos de 1 minuto", async () => {
+    const [a] = await q<{ ok: boolean }>("select claim_auth_email('X@lc.test', 'login') as ok");
+    const [b] = await q<{ ok: boolean }>("select claim_auth_email('x@lc.test ', 'login') as ok");
+    expect(a.ok).toBe(true);
+    expect(b.ok).toBe(false);
+  });
+
+  it("aluno não chama a função", async () => {
+    await as(db, aliceId, async () => {
+      await expect(db.query("select claim_auth_email('x@lc.test', 'login')")).rejects.toThrow(/permission denied/);
+    });
+  });
+});

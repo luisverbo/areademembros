@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { ImageUpload } from "@/components/admin/image-upload";
 import { Card, CardHeader } from "@/components/ui/card";
 import { Checkbox, Field, Input, Select, Textarea } from "@/components/ui/field";
@@ -8,17 +8,21 @@ import { FormMessage } from "@/components/ui/form-message";
 import { SubmitButton } from "@/components/ui/submit-button";
 import type { Tables } from "@/lib/database.types";
 import { formatDuration } from "@/lib/forms";
+import { leadFieldsLabels } from "@/lib/lead-fields";
 import { updateCourse } from "../actions";
 
 type Props = {
+  siteUrl: string;
   course: Tables<"courses">;
   cohorts: { id: string; name: string }[];
   lessons: { id: string; title: string }[];
 };
 
-export function CourseForm({ course, cohorts, lessons }: Props) {
+export function CourseForm({ siteUrl, course, cohorts, lessons }: Props) {
   const [state, action] = useActionState(updateCourse.bind(null, course.id), undefined);
   const e = state?.errors ?? {};
+  const [isFree, setIsFree] = useState(course.is_free);
+  const publicLink = `${siteUrl}/gratis/${course.slug}`;
 
   return (
     <form action={action} className="flex flex-col gap-6">
@@ -53,10 +57,54 @@ export function CourseForm({ course, cohorts, lessons }: Props) {
           </Field>
           <div className="flex flex-col gap-3 md:col-span-2">
             <Checkbox name="is_published" defaultChecked={course.is_published} label="Publicado (aparece na vitrine)" />
-            <Checkbox name="is_free" defaultChecked={course.is_free} label="Curso grátis (qualquer pessoa cadastrada assiste)" />
+            <Checkbox
+              name="is_free"
+              checked={isFree}
+              onChange={(ev) => setIsFree(ev.target.checked)}
+              label="Curso grátis (qualquer pessoa cadastrada assiste)"
+            />
           </div>
         </div>
       </Card>
+
+      {isFree ? (
+        <Card>
+          <CardHeader title="Cadastro do curso grátis" description="O visitante deixa os dados no link público, vira lead e já assiste." />
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="O que pedir" htmlFor="lead_fields">
+              <Select id="lead_fields" name="lead_fields" defaultValue={course.lead_fields}>
+                {Object.entries(leadFieldsLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Como entra" htmlFor="lead_access" hint="“Só WhatsApp” sempre entra direto (não há e-mail para confirmar).">
+              <Select id="lead_access" name="lead_access" defaultValue={course.lead_access}>
+                <option value="direct">Direto: preencheu, já assiste</option>
+                <option value="confirm_email">Confirmando pelo link no e-mail</option>
+              </Select>
+            </Field>
+            <div className="flex flex-col gap-1.5 md:col-span-2">
+              <span className="text-fg-soft text-sm font-medium">Link público</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <code className="border-border bg-surface-2 text-fg-soft min-w-0 flex-1 truncate rounded-lg border px-3 py-2 text-sm">
+                  {publicLink}
+                </code>
+                <button
+                  type="button"
+                  className="bg-border rounded-lg px-3 py-2 text-sm font-semibold hover:bg-[#36363b]"
+                  onClick={() => void navigator.clipboard?.writeText(publicLink)}
+                >
+                  Copiar
+                </button>
+              </div>
+              <p className="text-fg-muted text-xs">Funciona com o curso publicado. Dá para somar UTMs: …?utm_source=instagram</p>
+            </div>
+          </div>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader title="Imagens" description="Cada formato aparece num lugar da vitrine." />
