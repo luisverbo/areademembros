@@ -667,11 +667,37 @@ describe("caderno (2B)", () => {
     expect(await as(db, aliceId, () => q("select * from notes"))).toHaveLength(1);
     // Bob não anota em aula que não pode ver (aula 4)
     await as(db, bobId, async () => {
-      await expect(db.query("insert into notes (user_id, lesson_id, content) values ($1, $2, 'x')", [bobId, lessons[3]])).rejects.toThrow(/row-level security/);
+      await expect(db.query("insert into notes (user_id, lesson_id, content) values ($1, $2, 'x')", [bobId, lessons[3]])).rejects.toThrow(
+        /row-level security/,
+      );
     });
     // Não dá para mover a nota para outro dono
     await as(db, aliceId, async () => {
       await expect(db.query("update notes set user_id = $1", [bobId])).rejects.toThrow(/permission denied/);
     });
+  });
+});
+
+describe("radar (2C)", () => {
+  it("só o admin marca comentário como resolvido; aluno não altera handled_at", async () => {
+    const [c] = await q<{ id: string }>(
+      "insert into comments (lesson_id, cohort_id, user_id, content) values ($1, $2, $3, 'Quero reembolso') returning id",
+      [lessons[0], cohortA, aliceId],
+    );
+    await as(db, aliceId, async () => {
+      await expect(db.query("select set_comment_handled($1, true)", [c.id])).rejects.toThrow(/apenas admin/);
+    });
+    await as(db, aliceId, async () => {
+      await expect(db.query("update comments set handled_at = now() where id = $1", [c.id])).rejects.toThrow(/permission denied/);
+    });
+    const handled = await as(db, adminId, async () => {
+      await q("select set_comment_handled($1, true)", [c.id]);
+      const [on] = await q<{ handled_at: string | null }>("select handled_at from comments where id = $1", [c.id]);
+      await q("select set_comment_handled($1, false)", [c.id]);
+      const [off] = await q<{ handled_at: string | null }>("select handled_at from comments where id = $1", [c.id]);
+      return [on.handled_at, off.handled_at];
+    });
+    expect(handled[0]).not.toBeNull();
+    expect(handled[1]).toBeNull();
   });
 });

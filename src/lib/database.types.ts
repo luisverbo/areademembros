@@ -286,6 +286,7 @@ export type Database = {
           cohort_id: string | null;
           content: string;
           created_at: string;
+          handled_at: string | null;
           id: string;
           lesson_id: string;
           parent_id: string | null;
@@ -300,6 +301,7 @@ export type Database = {
           cohort_id?: string | null;
           content: string;
           created_at?: string;
+          handled_at?: string | null;
           id?: string;
           lesson_id: string;
           parent_id?: string | null;
@@ -314,6 +316,7 @@ export type Database = {
           cohort_id?: string | null;
           content?: string;
           created_at?: string;
+          handled_at?: string | null;
           id?: string;
           lesson_id?: string;
           parent_id?: string | null;
@@ -1118,6 +1121,7 @@ export type Database = {
         }[];
       };
       set_cohort_lessons: { Args: { p_cohort_id: string; p_items: Json }; Returns: undefined };
+      set_comment_handled: { Args: { p_comment_id: string; p_handled: boolean }; Returns: undefined };
       set_lesson_completed: {
         Args: { p_completed: boolean; p_lesson_id: string };
         Returns: {

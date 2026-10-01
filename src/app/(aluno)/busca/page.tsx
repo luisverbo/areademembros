@@ -59,11 +59,11 @@ export default async function SearchPage({ searchParams }: PageProps<"/busca">) 
   let limited = false;
   if (query) {
     hits = await findSegments(query);
-    limited = profile.role !== "admin" && (await aiQuestionsUsedToday()) >= DAILY_AI_QUESTIONS;
-    if (!limited) {
-      const supabase = await createClient();
-      await supabase.from("ai_searches").insert({ user_id: profile.id, query });
-    }
+    // O limite diário só vale para a resposta escrita por IA; a busca nas legendas é livre.
+    limited = isAiConfigured() && profile.role !== "admin" && (await aiQuestionsUsedToday()) >= DAILY_AI_QUESTIONS;
+    // Toda busca fica registrada para o Radar ("O que os alunos procuram").
+    const supabase = await createClient();
+    await supabase.from("ai_searches").insert({ user_id: profile.id, query });
   }
 
   return (

@@ -14,7 +14,8 @@ Stack: Next.js 16 (App Router) · TypeScript · Tailwind 4 · Supabase (Postgres
 | 1C — Webhooks (Kiwify, Hotmart, Yampi, Mercado Pago, Asaas), e-mail (Resend), curso grátis + lead, webhooks de saída, ficha do aluno | ✅ entregue |
 | 2A — Transcrição (legenda), resumo e checklist, busca nas aulas (Professor IA removido; IA só com chave) | ✅ entregue |
 | 2B — Caderno com minuto (exporta PDF/Word), prévia estilo trailer, botão de oferta no vídeo | ✅ entregue |
-| 2C — Radar de Comentários (versão sem IA, a definir) | próxima |
+| 2C — Radar de Comentários (sem IA): fila de atendimento, aulas com mais dúvidas, buscas, alunos parados | ✅ entregue |
+| 3 — Comunicação (WhatsApp oficial, e-mails) | próxima |
 
 ## Rodando localmente
 
@@ -46,6 +47,7 @@ update public.profiles set role = 'admin' where email = 'seu@email.com';
 | `node tests/e2e/password-smoke.mjs` | login com senha e primeiro acesso |
 | `node tests/e2e/webhooks-smoke.mjs` | webhooks de pagamento, curso grátis, webhooks de saída e Integrações |
 | `node tests/e2e/ai-smoke.mjs` | transcrição, resumo na aula e busca (sem chave da IA) |
+| `node tests/e2e/radar-smoke.mjs` | Radar de Comentários: fila, responder, resolver, buscas e alunos parados |
 | `node tests/e2e/notebook-smoke.mjs` | caderno, Meu Caderno, exportação, oferta no vídeo e prévia de curso bloqueado |
 | `npm run db:types` | regenera `src/lib/database.types.ts` a partir do banco local |
 

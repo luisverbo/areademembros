@@ -343,3 +343,13 @@ Ainda abertas:
 - **Prévia estilo trailer:** no admin do curso, escolha a aula de prévia e o trecho (início e fim). Na vitrine, ao parar o mouse sobre um curso bloqueado, o card abre e toca o trecho sem som, com "Desbloquear" (checkout da turma de venda) e "Ver detalhes". No celular, o toque leva direto ao checkout.
 - **Sem IA:** "Organizar com IA" e "O que eu perdi?" ficaram fora (decisão de 03/10/2026).
 - **Banco:** `supabase/setup/06-atualizacao-etapa-2b.sql` (tabela `notes`).
+
+## 16. Notas de implementação (Etapa 2C — Radar sem IA)
+
+- **Onde:** Admin → Radar. Filtros por período (7, 30 ou 90 dias) e por curso.
+- **Classificação por palavras-chave** (sem custo): dúvida, reclamação, elogio, pedido e problema técnico. **Urgente** quando cita reembolso, estorno, cancelamento, Procon, Reclame Aqui etc. Não é perfeita; o admin sempre lê o comentário.
+- **Fila de atendimento:** comentários de alunos ainda sem resposta do professor (urgentes e problemas técnicos primeiro). Dá para responder ali mesmo (a resposta aparece na aula, na mesma turma) ou marcar como resolvido.
+- **Aulas com mais dúvidas**, **o que os alunos procuram** (buscas mais feitas e quais não encontram aula = conteúdo que falta), **palavras mais citadas**, **pedidos de conteúdo** e **elogios** (para depoimento, com autorização).
+- **Alunos parados:** matrícula ativa sem entrar há 7, 15 ou 30+ dias, com botão "Chamar no WhatsApp" (abre o WhatsApp do admin com mensagem pronta; sem API, sem custo).
+- **Fica para a Etapa 3:** alerta automático no WhatsApp do admin para urgentes e relatório semanal por e-mail (dependem do WhatsApp oficial e do Resend).
+- **Banco:** `supabase/setup/07-atualizacao-etapa-2c.sql` (coluna `comments.handled_at` e função `set_comment_handled`, só admin).
