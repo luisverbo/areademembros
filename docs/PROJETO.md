@@ -36,7 +36,7 @@ Além de entregar as aulas, a área **vende**: o aluno vê o portfólio inteiro,
 | Separado do FunilPro | Sim, projeto e banco próprios. Integração apenas por webhook. |
 | Hospedagem de vídeo | Fora do site. **Bunny Stream** para aulas pagas; **YouTube (não listado)** só para conteúdo grátis. Nunca hospedar vídeo no próprio servidor. |
 | Download de vídeo | **Proibido.** Só as anotações do aluno podem ser exportadas. |
-| Integração externa | Só com a plataforma de pagamento. Toda a inteligência fica dentro da área. |
+| Integração externa | Só com as plataformas de pagamento. Toda a inteligência fica dentro da área. |
 | Turmas | Um curso pode ter várias turmas, cada uma com aulas e liberação próprias. |
 | Cursos grátis | Existem, com link público, cadastro rápido e vitrine aberta. |
 | Login | Link mágico por e-mail (sem senha). |
@@ -51,10 +51,9 @@ Além de entregar as aulas, a área **vende**: o aluno vê o portfólio inteiro,
 | Banco de dados, auth e storage | **Supabase** (Postgres + Auth com magic link + Storage para capas, banners e materiais) |
 | Vídeos pagos | **Bunny Stream** (player embedado, token de acesso com validade, restrito ao domínio) |
 | Vídeos grátis | YouTube embed |
-| Pagamento | Checkout externo (**plataforma a definir**: Kiwify, Hotmart ou Asaas) → webhook |
-| WhatsApp automático individual | **Evolution API** |
-| WhatsApp em massa | **API oficial do WhatsApp** (nunca disparar em massa pela Evolution) |
-| E-mail | Serviço transacional a definir (ex.: Resend) com domínio autenticado |
+| Pagamento | Checkout externo → webhook. **Multi-plataforma:** Kiwify, Hotmart, Yampi, Mercado Pago e Asaas (um adaptador por provedor, núcleo único de matrícula). |
+| WhatsApp | **API oficial do WhatsApp** (decisão de 01/10/2026). Só entra na Etapa 3. |
+| E-mail | **Resend** com domínio autenticado (também usado como SMTP do Supabase Auth para o link mágico) |
 | IA | Transcrição automática de cada aula (ex.: Whisper) + modelo de linguagem (API da Anthropic) para tutor, busca, resumos e análises |
 | Estilo | Tailwind CSS |
 
@@ -82,6 +81,16 @@ Use isto como ponto de partida e proponha ajustes na Etapa 1.
 - **automations** — gatilho (`inactive_3_days`, `lesson_released`, `course_completed`, `free_watched_not_bought`), canal, template, ativo.
 - **webhook_events** — payload bruto, provedor, status, processado em (idempotência).
 - **certificates** — user_id, course_id, código, emitido em.
+
+### 3.1 Ajustes aprovados (01/10/2026)
+
+- `users` vira **`profiles`**, ligada a `auth.users` do Supabase.
+- **Liberação calculada na leitura**, por função no banco usada pela RLS (sem depender de cron). O cron só dispara avisos.
+- `lessons.is_free` (aula grátis avulsa) e campos do **botão de oferta** na aula (minuto, texto, link).
+- **`lesson_unlocks`**: liberar uma aula para um aluno específico.
+- **`cohort_products`**: liga turma ↔ produto de cada provedor (uma turma pode ser vendida em mais de uma plataforma).
+- Progresso é **por aula**, não por turma (mudar de turma não perde progresso).
+- Fuso `America/Sao_Paulo` em todas as regras de liberação.
 
 **Regras de acesso (RLS):** aluno só lê as aulas das turmas em que está matriculado **e** que já foram liberadas; admin lê e escreve tudo; visitante só vê cursos `is_free` e a vitrine pública.
 
@@ -215,7 +224,12 @@ Referência: os mockups que criei na ferramenta de design (versão **"grafite"**
 Construir **uma etapa por vez**. Cada etapa termina com: tudo funcionando, testado, revisado, sem erros no console, e um resumo do que foi feito para eu aprovar.
 
 ### Etapa 1 — Fundação e MVP da mentoria
-Objetivo: a primeira turma da mentoria consegue rodar aqui.
+Objetivo: a primeira turma da mentoria consegue rodar aqui. Entregue em três partes, cada uma aprovada antes da próxima:
+- **1A — Fundação e admin de conteúdo:** setup, banco + RLS, login, admin de cursos/módulos/aulas/materiais/capas, admin de turmas (liberação, aulas da turma, produtos), duplicar turma, matrícula manual, mudar aluno de turma.
+- **1B — Experiência do aluno:** vitrine, página da aula, progresso, cadeado com data, comentários por turma, materiais, liberar aula para um aluno.
+- **1C — Vendas, grátis e acompanhamento:** webhooks dos 5 provedores, e-mail de acesso, expiração, curso grátis + lead, ficha do aluno.
+
+Lista completa:
 - Setup do projeto (Next.js + Supabase + Tailwind), estrutura de pastas, variáveis de ambiente, `docs/PROJETO.md` salvo.
 - Modelo de dados completo + migrações + RLS.
 - Login por magic link; papéis aluno/admin.
@@ -237,7 +251,7 @@ Objetivo: a primeira turma da mentoria consegue rodar aqui.
 - **Radar de Comentários** (classificação, alertas, relatório semanal).
 
 ### Etapa 3 — Relacionamento, vendas e retenção
-- **Central de Mensagens:** envios manuais com filtros + IA para escrever; automações (inativo 3 dias, aula liberada, concluiu, grátis sem compra); integração Evolution (individual) e API oficial (massa); e-mail transacional; LGPD (aceite e descadastro).
+- **Central de Mensagens:** envios manuais com filtros + IA para escrever; automações (inativo 3 dias, aula liberada, concluiu, grátis sem compra); WhatsApp pela API oficial (individual e em massa); e-mail transacional; LGPD (aceite e descadastro).
 - **Recomendação** de próximo curso.
 - **Certificados.**
 - **Painel de desempenho** (abandono por aula, vendas internas, comparação entre turmas).
@@ -251,7 +265,7 @@ Objetivo: a primeira turma da mentoria consegue rodar aqui.
 - **Vídeo nunca pode ser baixado.** Bunny com token + domínio restrito. YouTube só para grátis.
 - **Nunca hospedar vídeo no servidor.**
 - **Reembolso/chargeback remove o acesso automaticamente.**
-- **WhatsApp em massa só pela API oficial.** Evolution apenas para mensagens individuais automáticas (risco de banimento).
+- **WhatsApp só pela API oficial** (individual e em massa).
 - **LGPD:** aceite de mensagens no cadastro; link de descadastro em todo e-mail.
 - **Depoimentos** extraídos de comentários só com autorização do aluno.
 - **Webhooks idempotentes** e com validação de assinatura.
@@ -261,13 +275,26 @@ Objetivo: a primeira turma da mentoria consegue rodar aqui.
 
 ---
 
-## 12. Pendências (decisões minhas)
+## 12. Pendências e decisões
 
-- [ ] Plataforma de pagamento (Kiwify, Hotmart ou Asaas) — define o formato do webhook.
-- [ ] Nome da área de membros e domínio (nos mockups usei "LC.Academy" como exemplo).
-- [ ] Serviço de e-mail transacional.
-- [ ] Conta no Bunny Stream.
-- [ ] Usar a API oficial do WhatsApp desde o início ou só na Etapa 3.
+Decididas em 01/10/2026:
+
+- [x] Pagamento: **Kiwify, Hotmart, Yampi, Mercado Pago e Asaas**, todas via webhook. Cada turma pode ter um ou mais produtos ligados (de qualquer provedor).
+- [x] E-mail transacional: **Resend**.
+- [x] WhatsApp: **API oficial**, só na Etapa 3. Nas Etapas 1 e 2, avisos de acesso e alertas saem por e-mail.
+- [x] Nome provisório: **LC.Academy** (trocável por variável de ambiente).
+- [x] Supabase: projeto próprio, região São Paulo (`sa-east-1`). Fuso fixo `America/Sao_Paulo`.
+- [x] Ajustes no modelo de dados (seção 3.1) aprovados.
+- [x] Etapa 1 dividida em 1A, 1B e 1C (seção 10).
+
+Ainda abertas:
+
+- [ ] Domínio definitivo.
+- [ ] Conta no Bunny Stream (chave de Token Authentication). Até lá, testes com YouTube.
+- [ ] Mockups "grafite" (imagens) para reproduzir fielmente.
+- [ ] Lead do curso grátis entra direto ou confirma o e-mail antes.
+- [ ] Prazo de acesso conta da compra ou do início da turma.
+- [ ] Aluno em duas turmas do mesmo curso.
 
 ---
 
