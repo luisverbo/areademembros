@@ -15,6 +15,8 @@ import { embedFor } from "@/lib/video-embed";
 import { CompleteButton } from "./complete-button";
 import { Comments, type CommentItem } from "./comments";
 import { LessonSidebar } from "./lesson-sidebar";
+import { Notebook } from "./notebook";
+import { OfferButton } from "./offer-button";
 import { LessonSummary } from "./lesson-summary";
 
 type Props = PageProps<"/aula/[lessonId]">;
@@ -80,11 +82,18 @@ export default async function LessonPage({ params, searchParams }: Props) {
   const supabase = await createClient();
   const [{ data: content }, { data: details }, { data: materials }, { data: comments }] = await Promise.all([
     supabase.from("lesson_contents").select("video_provider, video_id, ai_summary, ai_checklist").eq("lesson_id", lessonId).maybeSingle(),
-    supabase.from("lessons").select("description, is_published").eq("id", lessonId).maybeSingle(),
+    supabase.from("lessons").select("description, is_published, offer_at_seconds, offer_label, offer_url").eq("id", lessonId).maybeSingle(),
     supabase.from("lesson_materials").select("id, name").eq("lesson_id", lessonId).order("position"),
     supabase.rpc("lesson_comments", { p_lesson_id: lessonId, p_cohort_id: view.cohort?.id }),
   ]);
 
+  const { data: notes } = await supabase
+    .from("notes")
+    .select("id, content, timestamp_seconds, updated_at")
+    .eq("user_id", profile.id)
+    .eq("lesson_id", lessonId)
+    .order("timestamp_seconds", { nullsFirst: true })
+    .order("created_at");
   const embed = content ? embedFor(content.video_provider, content.video_id) : null;
   const summaryPoints = (
     (content?.ai_summary as { points?: { title: string; detail: string; start_seconds: number | null }[] } | null)?.points ?? []
@@ -107,14 +116,19 @@ export default async function LessonPage({ params, searchParams }: Props) {
       <main className="mx-auto grid max-w-7xl items-start gap-6 px-4 py-6 md:px-10 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="flex min-w-0 flex-col gap-5 lg:col-start-1">
           {embed ? (
-            <VideoPlayer
-              key={lessonId}
-              provider={embed.provider}
-              src={embed.src}
-              lessonId={lessonId}
-              title={lesson.title}
-              startAt={startOverride ?? (lesson.completed ? 0 : lesson.lastPositionSeconds)}
-            />
+            <div className="relative">
+              <VideoPlayer
+                key={lessonId}
+                provider={embed.provider}
+                src={embed.src}
+                lessonId={lessonId}
+                title={lesson.title}
+                startAt={startOverride ?? (lesson.completed ? 0 : lesson.lastPositionSeconds)}
+              />
+              {details?.offer_at_seconds !== null && details?.offer_at_seconds !== undefined && details.offer_label && details.offer_url ? (
+                <OfferButton at={details.offer_at_seconds} label={details.offer_label} url={details.offer_url} />
+              ) : null}
+            </div>
           ) : (
             <div className="border-border bg-surface text-fg-muted flex aspect-video items-center justify-center rounded-[var(--radius-card)] border px-6 text-center">
               O vídeo desta aula ainda não está disponível.
@@ -159,7 +173,7 @@ export default async function LessonPage({ params, searchParams }: Props) {
 
         {/* Celular: lista de aulas logo abaixo do vídeo. Desktop: coluna da direita. */}
         <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
-          <LessonSidebar lessons={lessonList} />
+          <LessonSidebar lessons={lessonList} notebook={<Notebook lessonId={lessonId} initial={notes ?? []} />} />
         </div>
 
         <div className="flex min-w-0 flex-col gap-5 lg:col-start-1">

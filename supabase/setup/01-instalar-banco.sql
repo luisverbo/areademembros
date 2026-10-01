@@ -1,6 +1,6 @@
 -- =============================================================================
 -- LC.Academy — instalação completa do banco (gerado automaticamente; não edite)
--- Migrações: 20261001120000, 20261001120100, 20261001120200, 20261001120300, 20261002090000, 20261002090100, 20261002100000, 20261002100100, 20261003090000
+-- Migrações: 20261001120000, 20261001120100, 20261001120200, 20261001120300, 20261002090000, 20261002090100, 20261002100000, 20261002100100, 20261003090000, 20261003100000
 --
 -- Como usar: Supabase > SQL Editor > New query > cole TUDO > Run.
 -- Rode UMA vez, num projeto novo.
@@ -1479,6 +1479,45 @@ $$;
 revoke execute on function public.search_lesson_segments(text, integer) from public, anon;
 grant execute on function public.search_lesson_segments(text, integer) to authenticated, service_role;
 
+-- >>> 20261003100000_notes.sql
+-- =============================================================================
+-- Etapa 2B: caderno de anotações. Cada nota guarda o minuto da aula.
+-- =============================================================================
+
+create table public.notes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  lesson_id uuid not null references public.lessons (id) on delete cascade,
+  content text not null default '' check (length(content) <= 20000),
+  timestamp_seconds integer check (timestamp_seconds >= 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index notes_user_lesson_idx on public.notes (user_id, lesson_id, timestamp_seconds);
+create index notes_user_updated_idx on public.notes (user_id, updated_at desc);
+create trigger notes_updated_at before update on public.notes
+  for each row execute function public.set_updated_at();
+
+alter table public.notes enable row level security;
+
+-- Notas são só do aluno (nem o admin lê: é o caderno pessoal).
+create policy notes_select_own on public.notes
+  for select to authenticated using (user_id = (select auth.uid()));
+create policy notes_insert_own on public.notes
+  for insert to authenticated
+  with check (user_id = (select auth.uid()) and (select public.can_access_lesson(lesson_id)));
+create policy notes_update_own on public.notes
+  for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+create policy notes_delete_own on public.notes
+  for delete to authenticated using (user_id = (select auth.uid()));
+
+revoke all on public.notes from anon;
+grant select, insert, delete on public.notes to authenticated;
+grant update (content, timestamp_seconds) on public.notes to authenticated;
+grant all on public.notes to service_role;
+
 -- Registra as migrações aplicadas (permite usar "supabase db push" no futuro).
 create schema if not exists supabase_migrations;
 create table if not exists supabase_migrations.schema_migrations (version text primary key, statements text[], name text);
@@ -1491,7 +1530,8 @@ insert into supabase_migrations.schema_migrations (version, name) values
   ('20261002090100', 'lesson_comments'),
   ('20261002100000', 'leads_and_integrations'),
   ('20261002100100', 'email_throttle'),
-  ('20261003090000', 'ai_transcripts')
+  ('20261003090000', 'ai_transcripts'),
+  ('20261003100000', 'notes')
 on conflict (version) do nothing;
 
 commit;

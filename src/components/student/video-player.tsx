@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
+import { setVideoTime } from "./video-clock";
 
 type Props = {
   provider: "bunny" | "youtube";
@@ -74,7 +75,9 @@ export function VideoPlayer({ provider, src, lessonId, title, startAt, onEnded }
 
   useEffect(() => {
     const s = state.current;
+    setVideoTime(startAt);
     const maybeSave = (force = false) => {
+      setVideoTime(s.position);
       const now = Date.now();
       if (force || now - s.lastSaved >= SAVE_EVERY_MS) {
         s.lastSaved = now;

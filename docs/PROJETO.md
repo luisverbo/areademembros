@@ -334,3 +334,12 @@ Ainda abertas:
 - **Resumo e checklist** passam a ser escritos pelo admin na tela da aula (sem custo). O botão "Gerar com IA" só aparece se um dia houver `ANTHROPIC_API_KEY`.
 - **Busca** ("Buscar nas aulas") funciona de graça, direto nas legendas (busca do Postgres). A resposta escrita por IA só aparece se houver chave.
 - Por consequência, ficam fora do escopo até nova decisão: "Organizar com IA" e "O que eu perdi?" no caderno, o Radar de Comentários com IA, a recomendação por IA, a IA nas mensagens e a capa gerada por IA. Versões sem IA serão propostas em cada etapa.
+
+## 15. Notas de implementação (Etapa 2B)
+
+- **Caderno:** aba "Caderno" ao lado da lista de aulas. "+ Nova nota em mm:ss" grava o minuto em que o vídeo está; o texto salva sozinho enquanto o aluno digita. Clicar no minuto leva o vídeo até ele. As notas são só do aluno (nem o admin lê).
+- **Meu Caderno** (`/caderno`): todas as notas por curso e aula, com busca e exportação em PDF ou Word (tudo, por curso ou por aula). Clicar no minuto abre a aula naquele ponto.
+- **Botão de oferta:** configurado por aula no admin (minuto, texto e link). Aparece sobre o vídeo a partir do minuto definido e pode ser fechado.
+- **Prévia estilo trailer:** no admin do curso, escolha a aula de prévia e o trecho (início e fim). Na vitrine, ao parar o mouse sobre um curso bloqueado, o card abre e toca o trecho sem som, com "Desbloquear" (checkout da turma de venda) e "Ver detalhes". No celular, o toque leva direto ao checkout.
+- **Sem IA:** "Organizar com IA" e "O que eu perdi?" ficaram fora (decisão de 03/10/2026).
+- **Banco:** `supabase/setup/06-atualizacao-etapa-2b.sql` (tabela `notes`).

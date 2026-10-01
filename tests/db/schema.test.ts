@@ -651,3 +651,27 @@ describe("transcrição, Professor IA e busca (2A)", () => {
     expect((await as(db, adminId, () => q("select * from ai_messages"))).length).toBeGreaterThan(0);
   });
 });
+
+describe("caderno (2B)", () => {
+  it("nota só do dono, só em aula liberada, e nem o admin lê", async () => {
+    const [n] = await as(db, aliceId, () =>
+      q<{ id: string; timestamp_seconds: number }>(
+        "insert into notes (user_id, lesson_id, content, timestamp_seconds) values ($1, $2, 'Minha nota', 125) returning id, timestamp_seconds",
+        [aliceId, lessons[0]],
+      ),
+    );
+    expect(n.timestamp_seconds).toBe(125);
+    await q("insert into notes (user_id, lesson_id, content) values ($1, $2, 'Nota real')", [aliceId, lessons[0]]);
+    expect(await as(db, bobId, () => q("select * from notes"))).toHaveLength(0);
+    expect(await as(db, adminId, () => q("select * from notes"))).toHaveLength(0);
+    expect(await as(db, aliceId, () => q("select * from notes"))).toHaveLength(1);
+    // Bob não anota em aula que não pode ver (aula 4)
+    await as(db, bobId, async () => {
+      await expect(db.query("insert into notes (user_id, lesson_id, content) values ($1, $2, 'x')", [bobId, lessons[3]])).rejects.toThrow(/row-level security/);
+    });
+    // Não dá para mover a nota para outro dono
+    await as(db, aliceId, async () => {
+      await expect(db.query("update notes set user_id = $1", [bobId])).rejects.toThrow(/permission denied/);
+    });
+  });
+});

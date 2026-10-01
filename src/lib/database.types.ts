@@ -834,6 +834,51 @@ export type Database = {
           },
         ];
       };
+      notes: {
+        Row: {
+          content: string;
+          created_at: string;
+          id: string;
+          lesson_id: string;
+          timestamp_seconds: number | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          content?: string;
+          created_at?: string;
+          id?: string;
+          lesson_id: string;
+          timestamp_seconds?: number | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          content?: string;
+          created_at?: string;
+          id?: string;
+          lesson_id?: string;
+          timestamp_seconds?: number | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notes_lesson_id_fkey";
+            columns: ["lesson_id"];
+            isOneToOne: false;
+            referencedRelation: "lessons";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notes_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       outgoing_webhooks: {
         Row: {
           created_at: string;

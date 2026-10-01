@@ -49,3 +49,14 @@ h4 {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

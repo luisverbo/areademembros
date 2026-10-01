@@ -2,7 +2,9 @@ import "server-only";
 import { cache } from "react";
 import type { Profile } from "@/lib/auth";
 import type { Tables } from "@/lib/database.types";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { previewEmbed } from "@/lib/video-embed";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
@@ -19,6 +21,9 @@ export type Course = Pick<
   | "showcase_order"
   | "sales_cohort_id"
   | "is_published"
+  | "preview_lesson_id"
+  | "preview_start_seconds"
+  | "preview_end_seconds"
 >;
 
 /** Como o aluno chega ao curso. */
@@ -50,10 +55,12 @@ export type CourseView = {
   cohort: Cohort | null;
   lessons: LessonItem[];
   checkoutUrl: string | null;
+  /** Trecho de prévia (trailer) para curso bloqueado: URL do player sem som. */
+  previewSrc: string | null;
 };
 
 const COURSE_FIELDS =
-  "id, slug, title, description, cover_vertical_url, cover_horizontal_url, banner_url, is_free, showcase_order, sales_cohort_id, is_published";
+  "id, slug, title, description, cover_vertical_url, cover_horizontal_url, banner_url, is_free, showcase_order, sales_cohort_id, is_published, preview_lesson_id, preview_start_seconds, preview_end_seconds";
 
 /** Cursos publicados da vitrine, na ordem definida no admin. */
 export const getPublishedCourses = cache(async (): Promise<Course[]> => {
@@ -100,6 +107,18 @@ export function withBuyerData(checkoutUrl: string | null, profile: Pick<Profile,
   } catch {
     return null;
   }
+}
+
+/**
+ * Prévia (trailer) do curso bloqueado: o aluno ainda não tem acesso à aula, então o ID do vídeo
+ * é lido com a service role só para montar o player sem som no trecho definido no admin.
+ */
+async function previewSrcFor(course: Course): Promise<string | null> {
+  if (!course.preview_lesson_id) return null;
+  const admin = createAdminClient();
+  const { data } = await admin.from("lesson_contents").select("video_provider, video_id").eq("lesson_id", course.preview_lesson_id).maybeSingle();
+  if (!data?.video_id) return null;
+  return previewEmbed(data.video_provider, data.video_id, course.preview_start_seconds ?? 0, course.preview_end_seconds);
 }
 
 /** Monta a visão de um curso para o usuário: acesso, turma, aulas (com liberação) e progresso. */
@@ -178,6 +197,7 @@ export async function getCourseView(course: Course, profile: Profile): Promise<C
     cohort: enrollment ? enrollment.cohort : null,
     lessons,
     checkoutUrl: access === "locked" ? await checkoutUrlFor(supabase, course, profile) : null,
+    previewSrc: access === "locked" ? await previewSrcFor(course) : null,
   };
 }
 

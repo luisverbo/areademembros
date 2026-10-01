@@ -13,6 +13,9 @@ export function SiteHeader({ profile }: { profile: Profile }) {
           <Link href="/" className="text-fg hover:text-fg font-semibold">
             Início
           </Link>
+          <Link href="/caderno" className="text-fg-muted hover:text-fg">
+            Meu Caderno
+          </Link>
           {profile.role === "admin" ? (
             <Link href="/admin" className="text-fg-muted hover:text-fg">
               Admin

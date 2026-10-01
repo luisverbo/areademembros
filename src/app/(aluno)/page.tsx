@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Hero } from "@/components/student/hero";
 import { CourseCard } from "@/components/student/course-card";
 import { LessonCard } from "@/components/student/lesson-card";
+import { LockedCourseCard } from "@/components/student/locked-course-card";
 import { Row } from "@/components/student/row";
 import { LinkButton } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
@@ -74,19 +75,27 @@ export default async function HomePage() {
 
       {othersViews.length ? (
         <Row title={enrolled.length ? "Mais cursos para você" : "Cursos"}>
-          {othersViews.map((view) => {
-            const locked = view.access === "locked";
-            return (
+          {othersViews.map((view) =>
+            view.access === "locked" ? (
+              <LockedCourseCard
+                key={view.course.id}
+                title={view.course.title}
+                coverUrl={view.course.cover_vertical_url}
+                bannerUrl={view.course.banner_url ?? view.course.cover_horizontal_url}
+                description={view.course.description}
+                checkoutUrl={view.checkoutUrl}
+                detailsHref={`/curso/${view.course.slug}`}
+                previewSrc={view.previewSrc}
+              />
+            ) : (
               <CourseCard
                 key={view.course.id}
                 title={view.course.title}
                 coverUrl={view.course.cover_vertical_url}
-                href={locked && view.checkoutUrl ? view.checkoutUrl : `/curso/${view.course.slug}`}
-                external={locked && Boolean(view.checkoutUrl)}
-                locked={locked}
+                href={`/curso/${view.course.slug}`}
               />
-            );
-          })}
+            ),
+          )}
         </Row>
       ) : null}
     </main>
