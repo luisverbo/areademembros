@@ -73,11 +73,7 @@ beforeAll(async () => {
   for (const [i, id] of lessons.entries()) {
     await q("insert into cohort_lessons (cohort_id, lesson_id, position) values ($1, $2, $3)", [cohortA, id, i]);
   }
-  await q("insert into cohort_lessons (cohort_id, lesson_id, position) values ($1, $2, 0), ($1, $3, 1)", [
-    cohortB,
-    lessons[0],
-    lessons[1],
-  ]);
+  await q("insert into cohort_lessons (cohort_id, lesson_id, position) values ($1, $2, 0), ($1, $3, 1)", [cohortB, lessons[0], lessons[1]]);
 
   await q("insert into enrollments (user_id, cohort_id, origin) values ($1, $2, 'purchase')", [aliceId, cohortA]);
   await q("insert into enrollments (user_id, cohort_id, origin) values ($1, $2, 'purchase')", [bobId, cohortB]);
@@ -89,8 +85,16 @@ afterAll(async () => {
 
 describe("profiles", () => {
   it("cria o perfil a partir do cadastro no Auth", async () => {
-    const [p] = await q("select email, full_name, whatsapp, role, marketing_consent, marketing_consent_at from profiles where id = $1", [aliceId]);
-    expect(p).toMatchObject({ email: "alice@lc.test", full_name: "Alice", whatsapp: "+5511999990000", role: "student", marketing_consent: true });
+    const [p] = await q("select email, full_name, whatsapp, role, marketing_consent, marketing_consent_at from profiles where id = $1", [
+      aliceId,
+    ]);
+    expect(p).toMatchObject({
+      email: "alice@lc.test",
+      full_name: "Alice",
+      whatsapp: "+5511999990000",
+      role: "student",
+      marketing_consent: true,
+    });
     expect(p.marketing_consent_at).not.toBeNull();
   });
 
@@ -202,9 +206,9 @@ describe("acesso às aulas", () => {
     const [{ id: otherCourse }] = await q<{ id: string }>("insert into courses (slug, title) values ('outro', 'Outro') returning id");
     const [{ id: m }] = await q<{ id: string }>("insert into modules (course_id, title) values ($1, 'M') returning id", [otherCourse]);
     const [{ id: l }] = await q<{ id: string }>("insert into lessons (module_id, title) values ($1, 'L') returning id", [m]);
-    await expect(
-      db.query("insert into cohort_lessons (cohort_id, lesson_id) values ($1, $2)", [cohortA, l]),
-    ).rejects.toThrow(/não pertence ao curso/);
+    await expect(db.query("insert into cohort_lessons (cohort_id, lesson_id) values ($1, $2)", [cohortA, l])).rejects.toThrow(
+      /não pertence ao curso/,
+    );
     await q("delete from courses where id = $1", [otherCourse]);
   });
 
@@ -237,7 +241,8 @@ describe("cálculo da liberação (America/Sao_Paulo)", () => {
     return id;
   }
   const releaseAt = async (cohortId: string, lessonId: string, enrolledAt: string | null = null) =>
-    (await q<{ r: Date | null }>("select lesson_release_at($1, $2, $3) as r", [cohortId, lessonId, enrolledAt]))[0].r?.toISOString() ?? null;
+    (await q<{ r: Date | null }>("select lesson_release_at($1, $2, $3) as r", [cohortId, lessonId, enrolledAt]))[0].r?.toISOString() ??
+    null;
 
   it("semanal: toda segunda 19h a partir do início", async () => {
     // Quinta 01/10/2026 10h (BRT) -> segunda 05/10 19h BRT = 22h UTC
@@ -370,5 +375,80 @@ describe("webhooks", () => {
   it("aluno não lê eventos de webhook", async () => {
     const rows = await as(db, aliceId, () => q("select * from webhook_events"));
     expect(rows).toHaveLength(0);
+  });
+});
+
+describe("funções de matrícula e turma", () => {
+  it("aluno não chama funções de admin", async () => {
+    await as(db, aliceId, async () => {
+      await expect(db.query("select enroll_user($1, $2, 'manual')", [aliceId, cohortB])).rejects.toThrow(/forbidden/);
+    });
+    await as(db, aliceId, async () => {
+      await expect(db.query("select duplicate_cohort($1)", [cohortA])).rejects.toThrow(/forbidden/);
+    });
+    await as(db, aliceId, async () => {
+      await expect(db.query("select set_cohort_lessons($1, '[]')", [cohortA])).rejects.toThrow(/forbidden/);
+    });
+  });
+
+  it("matricula com prazo de acesso e reativa sem reiniciar quem já está ativo", async () => {
+    const [{ id: c }] = await q<{ id: string }>(
+      "insert into cohorts (course_id, name, access_months) values ($1, 'Anual', 12) returning id",
+      [courseId],
+    );
+    const [first] = await as(db, adminId, () =>
+      q<{ expires_at: Date; started_at: Date; status: string }>("select * from enroll_user($1, $2, 'manual')", [carolId, c]),
+    );
+    expect(first.status).toBe("active");
+    const months = (first.expires_at.getTime() - first.started_at.getTime()) / DAY;
+    expect(months).toBeGreaterThan(364);
+    expect(months).toBeLessThan(367);
+
+    // Grava de verdade (fora do rollback) e simula reembolso + nova compra
+    await q("select enroll_user($1, $2, 'purchase', 'kiwify', 'tx-1')", [carolId, c]);
+    await q("update enrollments set status = 'refunded', started_at = now() - interval '30 days' where user_id = $1 and cohort_id = $2", [
+      carolId,
+      c,
+    ]);
+    const [again] = await q<{ status: string; external_transaction_id: string; started_at: Date }>(
+      "select * from enroll_user($1, $2, 'purchase', 'hotmart', 'tx-2')",
+      [carolId, c],
+    );
+    expect(again.status).toBe("active");
+    expect(again.external_transaction_id).toBe("tx-2");
+    // started_at preservado (o progresso de liberação não volta ao zero)
+    expect(Date.now() - again.started_at.getTime()).toBeGreaterThan(29 * DAY);
+  });
+
+  it("duplica a turma com as aulas, inativa e sem produtos", async () => {
+    await q("insert into cohort_products (cohort_id, provider, external_product_id) values ($1, 'kiwify', 'prod-A')", [cohortA]);
+    const [{ id }] = await q<{ id: string }>("select duplicate_cohort($1) as id", [cohortA]);
+    const [copy] = await q<{ name: string; is_active: boolean }>("select name, is_active from cohorts where id = $1", [id]);
+    expect(copy).toEqual({ name: "Mentoria T1 (cópia)", is_active: false });
+    const [{ n }] = await q<{ n: number }>("select count(*)::int as n from cohort_lessons where cohort_id = $1", [id]);
+    expect(n).toBe(4);
+    const [{ p }] = await q<{ p: number }>("select count(*)::int as p from cohort_products where cohort_id = $1", [id]);
+    expect(p).toBe(0);
+  });
+
+  it("define aulas, ordem e datas da turma de uma vez", async () => {
+    const [{ id: c }] = await q<{ id: string }>(
+      "insert into cohorts (course_id, name, release_mode) values ($1, 'Datas', 'fixed_date') returning id",
+      [courseId],
+    );
+    await q("insert into cohort_lessons (cohort_id, lesson_id, position) values ($1, $2, 0)", [c, lessons[0]]);
+    const items = [
+      { lesson_id: lessons[2], release_at: "2026-11-02T22:00:00Z", release_offset_days: null },
+      { lesson_id: lessons[1], release_at: null, release_offset_days: null },
+    ];
+    await as(db, adminId, () => db.query("select set_cohort_lessons($1, $2)", [c, JSON.stringify(items)]));
+    // as() desfaz; aplica de verdade para conferir
+    await q("select set_cohort_lessons($1, $2)", [c, JSON.stringify(items)]);
+    const rows = await q<{ lesson_id: string; position: number; release_at: Date | null }>(
+      "select lesson_id, position, release_at from cohort_lessons where cohort_id = $1 order by position",
+      [c],
+    );
+    expect(rows.map((r) => r.lesson_id)).toEqual([lessons[2], lessons[1]]);
+    expect(rows[0].release_at?.toISOString()).toBe("2026-11-02T22:00:00.000Z");
   });
 });

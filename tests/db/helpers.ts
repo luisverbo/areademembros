@@ -6,7 +6,7 @@ import { Client } from "pg";
 // Configure TEST_DATABASE_URL apontando para um servidor onde o usuário pode criar bancos.
 const ADMIN_URL = process.env.TEST_DATABASE_URL ?? "postgres://postgres:postgres@localhost:5432/postgres";
 
-const root = path.resolve(__dirname, "../..");
+const root = path.resolve(import.meta.dirname, "../..");
 
 export async function createTestDatabase(): Promise<{ client: Client; drop: () => Promise<void> }> {
   const dbName = `am_test_${process.pid}_${Date.now()}`;
@@ -60,10 +60,7 @@ export async function createUser(
   meta: Record<string, unknown> = {},
   role: "student" | "admin" = "student",
 ): Promise<string> {
-  const { rows } = await client.query(
-    "insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id",
-    [email, meta],
-  );
+  const { rows } = await client.query("insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id", [email, meta]);
   const id = rows[0].id as string;
   if (role === "admin") {
     await client.query("update public.profiles set role = 'admin' where id = $1", [id]);

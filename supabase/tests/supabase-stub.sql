@@ -29,7 +29,8 @@ returns uuid
 language sql
 stable
 as $$
-  select nullif(current_setting('request.jwt.claims', true)::jsonb ->> 'sub', '')::uuid;
+  -- Igual ao Supabase: tolera a configuração vazia fora de requisições.
+  select nullif(nullif(current_setting('request.jwt.claims', true), '')::jsonb ->> 'sub', '')::uuid;
 $$;
 grant execute on function auth.uid() to anon, authenticated, service_role;
 

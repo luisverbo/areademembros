@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LC.Academy — Área de Membros
 
-## Getting Started
+Área de membros estilo Netflix com IA, da LC Marketing Digital.
+**A fonte da verdade do projeto é [`docs/PROJETO.md`](docs/PROJETO.md).**
 
-First, run the development server:
+Stack: Next.js 16 (App Router) · TypeScript · Tailwind 4 · Supabase (Postgres, Auth com link mágico, Storage).
+
+## Status
+
+| Etapa | Situação |
+| --- | --- |
+| 1A — Fundação e admin de conteúdo | ✅ entregue para revisão |
+| 1B — Experiência do aluno (vitrine, aula) | próxima |
+| 1C — Webhooks (Kiwify, Hotmart, Yampi, Mercado Pago, Asaas), grátis, ficha do aluno | depois |
+
+## Rodando localmente
+
+Requisitos: Node 20.9+, Docker.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npx supabase start            # sobe Postgres/Auth/Storage locais e aplica as migrações
+cp .env.example .env.local    # preencha com as chaves que o comando acima imprime
+npm run dev                   # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Primeiro admin: depois de criar o usuário (pelo admin de outro admin, ou no painel do Supabase), rode no SQL:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```sql
+update public.profiles set role = 'admin' where email = 'seu@email.com';
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+| Comando | O que faz |
+| --- | --- |
+| `npm run dev` | servidor de desenvolvimento |
+| `npm run lint` / `npm run typecheck` | ESLint e TypeScript |
+| `npm run test:unit` | testes de funções (datas, formulários, vídeo) |
+| `npm run test:db` | testes das migrações, RLS e regras de liberação (precisa de um Postgres em `TEST_DATABASE_URL`) |
+| `node tests/e2e/admin-smoke.mjs` | teste ponta a ponta do admin no navegador (com `npm run dev` rodando) |
+| `npm run db:types` | regenera `src/lib/database.types.ts` a partir do banco local |
 
-To learn more about Next.js, take a look at the following resources:
+## Estrutura
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+docs/PROJETO.md                 documento do projeto (decisões, etapas)
+supabase/migrations/            schema, RLS, storage e funções (fonte da verdade do banco)
+supabase/templates/             e-mail do link mágico (pt-BR)
+src/app/entrar, src/app/auth    login por link mágico
+src/app/admin/                  painel admin: cursos, aulas, turmas, alunos
+src/lib/                        Supabase, auth, datas (fuso São Paulo), formulários
+tests/db, tests/e2e             testes de banco e de navegador
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Regras importantes (resumo)
 
-## Deploy on Vercel
+- **Liberação de aulas é calculada no banco** (`lesson_release_at`), no fuso `America/Sao_Paulo`, e aplicada pelo RLS.
+  O aluno só lê o conteúdo (`lesson_contents`, materiais) das aulas liberadas; reembolso ou expiração cortam o acesso na hora.
+- **Vídeo nunca fica no servidor**: Bunny Stream para aulas pagas; YouTube só para conteúdo grátis (validado no admin).
+- **Nenhuma chave no código**: tudo em variáveis de ambiente (`.env.example`). `SUPABASE_SERVICE_ROLE_KEY` só no servidor.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Configuração do Supabase em produção (quando o projeto for criado)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Aplicar as migrações (`npx supabase link` + `npx supabase db push`).
+2. Authentication → URL Configuration: Site URL = domínio; Redirect URLs = `https://<domínio>/**`.
+3. Authentication → Emails → Magic Link: colar `supabase/templates/magic_link.html`.
+4. Authentication → SMTP: configurar o Resend (domínio autenticado).
+5. Authentication → Sign In: desativar cadastro público por e-mail (contas nascem na compra, no cadastro grátis ou pelo admin).
