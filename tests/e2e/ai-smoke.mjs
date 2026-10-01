@@ -38,7 +38,7 @@ async function user(email, name, role) {
   if (role === "admin") await must(sb.from("profiles").update({ role: "admin" }).eq("id", data.user.id));
   return data.user.id;
 }
-const adminId = await user("e2e-ia-admin@lc.test", "Admin IA", "admin");
+await user("e2e-ia-admin@lc.test", "Admin IA", "admin");
 const studentId = await user("e2e-ia-aluno@lc.test", "Aluno IA");
 const course = await must(sb.from("courses").insert({ slug: "e2e-ia", title: "E2E IA Curso", is_published: true }).select("id").single());
 const mod = await must(sb.from("modules").insert({ course_id: course.id, title: "M1" }).select("id").single());
