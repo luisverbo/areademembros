@@ -48,13 +48,13 @@ function NoteEditor({ note, onDelete, autoFocus }: { note: NoteDTO; onDelete: ()
   };
 
   return (
-    <li className="rounded-lg border border-border bg-surface-2 p-2.5">
+    <li className="border-border bg-surface-2 rounded-lg border p-2.5">
       <div className="mb-1.5 flex items-center justify-between gap-2 text-xs">
         {note.timestamp_seconds !== null ? (
           <button
             type="button"
             onClick={() => seekVideo(note.timestamp_seconds!)}
-            className="rounded bg-accent/15 px-1.5 py-0.5 font-semibold text-accent tabular-nums hover:bg-accent/25"
+            className="bg-accent/15 text-accent hover:bg-accent/25 rounded px-1.5 py-0.5 font-semibold tabular-nums"
             aria-label={`Ir para ${formatTimestamp(note.timestamp_seconds)}`}
           >
             {formatTimestamp(note.timestamp_seconds)}
@@ -62,8 +62,10 @@ function NoteEditor({ note, onDelete, autoFocus }: { note: NoteDTO; onDelete: ()
         ) : (
           <span className="text-fg-muted">Sem minuto</span>
         )}
-        <span className="flex items-center gap-3 text-fg-muted">
-          <span aria-live="polite">{state === "saving" ? "Salvando…" : state === "saved" ? "Salvo" : state === "error" ? "Não salvou" : ""}</span>
+        <span className="text-fg-muted flex items-center gap-3">
+          <span aria-live="polite">
+            {state === "saving" ? "Salvando…" : state === "saved" ? "Salvo" : state === "error" ? "Não salvou" : ""}
+          </span>
           <button
             type="button"
             className="hover:text-accent"
@@ -83,7 +85,7 @@ function NoteEditor({ note, onDelete, autoFocus }: { note: NoteDTO; onDelete: ()
         maxLength={20000}
         placeholder="Escreva sua anotação…"
         aria-label={`Nota${note.timestamp_seconds !== null ? ` no minuto ${formatTimestamp(note.timestamp_seconds)}` : ""}`}
-        className="w-full resize-none bg-transparent text-sm text-fg placeholder:text-fg-muted focus:outline-none"
+        className="text-fg placeholder:text-fg-muted w-full resize-none bg-transparent text-sm focus:outline-none"
       />
     </li>
   );
@@ -110,7 +112,7 @@ export function Notebook({ lessonId, initial }: { lessonId: string; initial: Not
         type="button"
         onClick={() => void add()}
         disabled={creating}
-        className="flex items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-60"
+        className="bg-accent hover:bg-accent-hover flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
       >
         + Nova nota em <span className="tabular-nums">{formatTimestamp(now)}</span>
       </button>
@@ -129,9 +131,9 @@ export function Notebook({ lessonId, initial }: { lessonId: string; initial: Not
           ))}
         </ul>
       ) : (
-        <p className="px-2 py-4 text-center text-sm text-fg-muted">Suas anotações desta aula aparecem aqui, com o minuto do vídeo.</p>
+        <p className="text-fg-muted px-2 py-4 text-center text-sm">Suas anotações desta aula aparecem aqui, com o minuto do vídeo.</p>
       )}
-      <Link href="/caderno" className="text-center text-xs font-semibold text-fg-muted hover:text-fg">
+      <Link href="/caderno" className="text-fg-muted hover:text-fg text-center text-xs font-semibold">
         Abrir Meu Caderno →
       </Link>
     </div>

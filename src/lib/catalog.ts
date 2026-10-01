@@ -116,7 +116,11 @@ export function withBuyerData(checkoutUrl: string | null, profile: Pick<Profile,
 async function previewSrcFor(course: Course): Promise<string | null> {
   if (!course.preview_lesson_id) return null;
   const admin = createAdminClient();
-  const { data } = await admin.from("lesson_contents").select("video_provider, video_id").eq("lesson_id", course.preview_lesson_id).maybeSingle();
+  const { data } = await admin
+    .from("lesson_contents")
+    .select("video_provider, video_id")
+    .eq("lesson_id", course.preview_lesson_id)
+    .maybeSingle();
   if (!data?.video_id) return null;
   return previewEmbed(data.video_provider, data.video_id, course.preview_start_seconds ?? 0, course.preview_end_seconds);
 }

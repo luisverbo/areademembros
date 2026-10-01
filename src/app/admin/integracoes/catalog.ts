@@ -82,4 +82,11 @@ export const PAYMENT_INTEGRATIONS: Record<Provider, IntegrationInfo> = {
 export const OTHER_INTEGRATIONS = {
   email: { slug: "email", name: "E-mail (Resend)", monogram: "@", summary: "E-mails de acesso, senha e boas-vindas com o visual da área." },
   funil: { slug: "funil", name: "FunilPro e outros", monogram: "↗", summary: "Avisa seu funil a cada lead, venda ou reembolso." },
+  whatsapp: { slug: "whatsapp", name: "WhatsApp", monogram: "W", summary: "Mensagens e automações pela API oficial (Meta) ou pela Z-API." },
+  cron: {
+    slug: "cron",
+    name: "Envios automáticos",
+    monogram: "⏱",
+    summary: "Roda as automações uma vez por dia (aluno parado, aula liberada…).",
+  },
 } as const;

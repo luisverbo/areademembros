@@ -9,7 +9,15 @@ const stamp = (s: number | null) => (s === null ? "" : `[${formatTimestamp(s)}] 
 export async function notebookToDocx(courses: NotebookCourse[], title: string): Promise<Buffer> {
   const children: Paragraph[] = [
     new Paragraph({ heading: HeadingLevel.TITLE, children: [new TextRun(title)] }),
-    new Paragraph({ children: [new TextRun({ text: `Exportado em ${new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`, italics: true, color: "666666" })] }),
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `Exportado em ${new Date().toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}`,
+          italics: true,
+          color: "666666",
+        }),
+      ],
+    }),
   ];
   for (const course of courses) {
     children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun(course.title)] }));
@@ -22,7 +30,9 @@ export async function notebookToDocx(courses: NotebookCourse[], title: string): 
             alignment: AlignmentType.LEFT,
             spacing: { after: 160 },
             children: lines.flatMap((line, i) => [
-              ...(i === 0 && note.timestamp_seconds !== null ? [new TextRun({ text: stamp(note.timestamp_seconds), bold: true, color: "D63A42" })] : []),
+              ...(i === 0 && note.timestamp_seconds !== null
+                ? [new TextRun({ text: stamp(note.timestamp_seconds), bold: true, color: "D63A42" })]
+                : []),
               new TextRun({ text: line, break: i > 0 ? 1 : undefined }),
             ]),
           }),

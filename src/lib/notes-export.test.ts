@@ -14,7 +14,12 @@ const sample = [
         moduleTitle: "M1",
         order: 0,
         notes: [
-          { id: "n1", content: "Ação: configurar o número 😀\nSegunda linha com acentuação: ção, ã, é", timestamp_seconds: 150, updated_at: "" },
+          {
+            id: "n1",
+            content: "Ação: configurar o número 😀\nSegunda linha com acentuação: ção, ã, é",
+            timestamp_seconds: 150,
+            updated_at: "",
+          },
           { id: "n2", content: "x".repeat(3000), timestamp_seconds: null, updated_at: "" },
         ],
       },

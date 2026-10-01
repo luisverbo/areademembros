@@ -74,3 +74,8 @@ export function daysSince(iso: string | null | undefined, now = Date.now()): num
   if (!iso) return null;
   return Math.floor((now - new Date(iso).getTime()) / 86_400_000);
 }
+
+/** Data/hora de N dias atrás em ISO (fora do render, para o lint de pureza). */
+export function isoDaysAgo(days: number, now = Date.now()): string {
+  return new Date(now - days * 86_400_000).toISOString();
+}

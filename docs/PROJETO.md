@@ -351,5 +351,17 @@ Ainda abertas:
 - **Fila de atendimento:** comentários de alunos ainda sem resposta do professor (urgentes e problemas técnicos primeiro). Dá para responder ali mesmo (a resposta aparece na aula, na mesma turma) ou marcar como resolvido.
 - **Aulas com mais dúvidas**, **o que os alunos procuram** (buscas mais feitas e quais não encontram aula = conteúdo que falta), **palavras mais citadas**, **pedidos de conteúdo** e **elogios** (para depoimento, com autorização).
 - **Alunos parados:** matrícula ativa sem entrar há 7, 15 ou 30+ dias, com botão "Chamar no WhatsApp" (abre o WhatsApp do admin com mensagem pronta; sem API, sem custo).
-- **Fica para a Etapa 3:** alerta automático no WhatsApp do admin para urgentes e relatório semanal por e-mail (dependem do WhatsApp oficial e do Resend).
+- **Fica para a Etapa 3:** alerta automático no WhatsApp do admin para urgentes e relatório semanal por e-mail (dependem do WhatsApp oficial e do Resend). Entregue na 3A.
 - **Banco:** `supabase/setup/07-atualizacao-etapa-2c.sql` (coluna `comments.handled_at` e função `set_comment_handled`, só admin).
+
+## 17. Notas de implementação (Etapa 3A — Central de Mensagens)
+
+- **Etapa 3 dividida:** 3A (mensagens), 3B (certificados, recomendação, painel de desempenho), 3C (polimento e revisão de segurança).
+- **Canais:** e-mail pelo Resend; WhatsApp pela **API oficial (Meta)** por padrão ou pela **Z-API** (`WHATSAPP_PROVIDER=zapi`). Sem as chaves, o canal aparece como "não configurado" e nada é enviado.
+- **API oficial:** fora da janela de 24 h a Meta só entrega modelo aprovado. Usamos um modelo de Utilidade com corpo "Olá, {{1}}! {{2}}" (`WHATSAPP_TEMPLATE`), onde {{1}} é o primeiro nome e {{2}} o texto (quebras de linha viram " · "). A Meta cobra por conversa iniciada.
+- **Z-API:** uma mensagem a cada 1,5 s para reduzir o risco de bloqueio do número.
+- **Envio manual** (Admin → Mensagens → Nova): canal, tipo (aviso aos alunos ou promoção), público (matrícula ativa, leads grátis sem compra, parados há X dias, concluíram, todos) por curso e turma, contagem antes de enviar, teste para o próprio admin, variáveis {{nome}}, {{curso}}, {{link}}. A fila envia em segundo plano; se sobrar, "Continuar envio" ou o cron diário terminam.
+- **Automações** (Admin → Mensagens → Automações, todas começam desligadas): aluno parado (X dias, uma vez por sumiço), aula liberada (aulas programadas), concluiu o curso (até 3 dias depois), grátis sem compra (X dias, só com aceite), alerta de comentário urgente (na hora, para o admin) e resumo semanal (segunda, para o admin). Rodam todo dia às 9h (Vercel Cron, `CRON_SECRET`); nenhuma mensagem automática repete (chave de deduplicação).
+- **LGPD:** todo e-mail da Central tem link de descadastro (página `/descadastro/...` sem login e cabeçalho de um clique). Quem se descadastra não recebe mais nada da Central; e-mails de acesso e senha continuam. Promoções só para quem aceitou receber mensagens.
+- **Sem IA:** "IA para escrever a mensagem" ficou fora (decisão de 03/10/2026).
+- **Banco:** `supabase/setup/08-atualizacao-etapa-3a.sql`.

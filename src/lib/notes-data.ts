@@ -28,7 +28,13 @@ export async function getNotebook(userId: string, filter?: { courseId?: string; 
     if (!c) courses.set(course.id, (c = { id: course.id, title: course.title, lessons: [] }));
     let l = c.lessons.find((x) => x.id === lesson.id);
     if (!l) {
-      l = { id: lesson.id, title: lesson.title, moduleTitle: lesson.module!.title, order: lesson.module!.position * 10_000 + lesson.position, notes: [] };
+      l = {
+        id: lesson.id,
+        title: lesson.title,
+        moduleTitle: lesson.module!.title,
+        order: lesson.module!.position * 10_000 + lesson.position,
+        notes: [],
+      };
       c.lessons.push(l);
     }
     l.notes.push({ id: row.id, content: row.content, timestamp_seconds: row.timestamp_seconds, updated_at: row.updated_at });

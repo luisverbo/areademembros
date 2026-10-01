@@ -13,16 +13,21 @@ export function OfferButton({ at, label, url }: { at: number; label: string; url
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-14 z-10 flex justify-end px-3 sm:bottom-16 sm:px-4">
-      <div className="pointer-events-auto flex max-w-[90%] items-center gap-1 rounded-xl border border-accent/60 bg-bg/90 p-1.5 pl-1.5 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] backdrop-blur motion-safe:animate-[fadeIn_.3s_ease-out]">
+      <div className="border-accent/60 bg-bg/90 pointer-events-auto flex max-w-[90%] items-center gap-1 rounded-xl border p-1.5 pl-1.5 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)] backdrop-blur motion-safe:animate-[fadeIn_.3s_ease-out]">
         <a
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          className="truncate rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-hover"
+          className="bg-accent hover:bg-accent-hover truncate rounded-lg px-4 py-2 text-sm font-semibold text-white"
         >
           {label}
         </a>
-        <button type="button" onClick={() => setClosed(true)} aria-label="Fechar oferta" className="flex size-8 items-center justify-center rounded-lg text-fg-muted hover:text-fg">
+        <button
+          type="button"
+          onClick={() => setClosed(true)}
+          aria-label="Fechar oferta"
+          className="text-fg-muted hover:text-fg flex size-8 items-center justify-center rounded-lg"
+        >
           ✕
         </button>
       </div>

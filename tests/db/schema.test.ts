@@ -701,3 +701,103 @@ describe("radar (2C)", () => {
     expect(handled[1]).toBeNull();
   });
 });
+
+describe("mensagens (3A)", () => {
+  let dani: string;
+  let edu: string;
+  let course2: string;
+  let l2: string[];
+  let weekly: string;
+  let freeCohort: string;
+
+  beforeAll(async () => {
+    dani = await createUser(db, "dani@lc.test", { full_name: "Dani" });
+    edu = await createUser(db, "edu@lc.test", { full_name: "Edu" });
+    [{ id: course2 }] = await q<{ id: string }>(
+      "insert into courses (slug, title, is_published) values ('c2', 'Curso 2', true) returning id",
+    );
+    const [{ id: mod }] = await q<{ id: string }>("insert into modules (course_id, title) values ($1, 'M') returning id", [course2]);
+    l2 = [];
+    for (let i = 0; i < 3; i++) {
+      const [{ id }] = await q<{ id: string }>(
+        "insert into lessons (module_id, title, position, is_published) values ($1, $2, $3, true) returning id",
+        [mod, `C2 Aula ${i + 1}`, i],
+      );
+      l2.push(id);
+    }
+    // Uma aula a cada 7 dias depois da entrada.
+    [{ id: weekly }] = await q<{ id: string }>(
+      `insert into cohorts (course_id, name, release_mode, release_config) values ($1, 'Semanal', 'days_after_join', '{"interval_days": 7}') returning id`,
+      [course2],
+    );
+    [{ id: freeCohort }] = await q<{ id: string }>("insert into cohorts (course_id, name) values ($1, 'Grátis') returning id", [course2]);
+    for (const [i, id] of l2.entries()) {
+      await q("insert into cohort_lessons (cohort_id, lesson_id, position) values ($1, $2, $3), ($4, $2, $3)", [weekly, id, i, freeCohort]);
+    }
+    // Dani entrou há 7,5 dias: a aula 2 liberou há meio dia.
+    await q("insert into enrollments (user_id, cohort_id, origin, started_at) values ($1, $2, 'purchase', $3)", [
+      dani,
+      weekly,
+      iso(Date.now() - 7.5 * DAY),
+    ]);
+    await q("update profiles set last_seen_at = $2 where id = $1", [dani, iso(Date.now() - 5 * DAY)]);
+    // Edu: lead grátis há 3 dias.
+    await q("insert into enrollments (user_id, cohort_id, origin, started_at) values ($1, $2, 'free', $3)", [
+      edu,
+      freeCohort,
+      iso(Date.now() - 3 * DAY),
+    ]);
+  });
+
+  it("aula liberada: só a que liberou na janela (não a da entrada nem a futura)", async () => {
+    const rows = await q<{ user_id: string; lesson_title: string }>(
+      "select * from automation_lessons_released($1, $2) where user_id = $3",
+      [iso(Date.now() - DAY), iso(Date.now()), dani],
+    );
+    expect(rows.map((r) => r.lesson_title)).toEqual(["C2 Aula 2"]);
+  });
+
+  it("aluno parado e grátis sem compra", async () => {
+    const idle3 = await q<{ user_id: string; course_title: string }>("select * from automation_idle_students(3)");
+    expect(idle3.find((r) => r.user_id === dani)?.course_title).toBe("Curso 2");
+    expect((await q("select * from automation_idle_students(7) where user_id = $1", [dani])).length).toBe(0);
+
+    expect((await q("select * from automation_free_no_purchase(2) where user_id = $1", [edu])).length).toBe(1);
+    expect((await q("select * from automation_free_no_purchase(5) where user_id = $1", [edu])).length).toBe(0);
+    await q("insert into enrollments (user_id, cohort_id, origin) values ($1, $2, 'purchase')", [edu, cohortB]);
+    expect((await q("select * from automation_free_no_purchase(2) where user_id = $1", [edu])).length).toBe(0);
+  });
+
+  it("concluiu o curso quando todas as aulas publicadas da turma estão concluídas", async () => {
+    const done = () =>
+      q<{ user_id: string; completed_at: string }>("select * from automation_courses_completed() where user_id = $1", [dani]);
+    for (const id of l2.slice(0, 2))
+      await q("insert into lesson_progress (user_id, lesson_id, completed_at) values ($1, $2, now())", [dani, id]);
+    expect(await done()).toHaveLength(0);
+    await q("insert into lesson_progress (user_id, lesson_id, completed_at) values ($1, $2, now())", [dani, l2[2]]);
+    const [row] = await done();
+    expect(row.completed_at).toBeTruthy();
+  });
+
+  it("aluno não roda as funções de automação nem lê a fila; admin lê", async () => {
+    await as(db, aliceId, async () => {
+      await expect(db.query("select * from automation_idle_students(3)")).rejects.toThrow(/permission denied/);
+    });
+    await q("insert into message_deliveries (user_id, channel, to_address, body) values ($1, 'email', 'alice@lc.test', 'oi')", [aliceId]);
+    expect(await as(db, aliceId, () => q("select * from message_deliveries"))).toHaveLength(0);
+    expect((await as(db, adminId, () => q("select * from message_deliveries"))).length).toBeGreaterThan(0);
+    expect(await as(db, aliceId, () => q("select * from automations"))).toHaveLength(0);
+    await as(db, aliceId, async () => {
+      await expect(db.query("update profiles set messages_opt_out_at = null where id = $1", [aliceId])).rejects.toThrow(
+        /permission denied/,
+      );
+    });
+  });
+
+  it("dedupe: a mesma automação não entra duas vezes", async () => {
+    await q("insert into message_deliveries (channel, to_address, body, dedupe_key) values ('email', 'x@lc.test', 'a', 'idle:x:email')");
+    await expect(
+      db.query("insert into message_deliveries (channel, to_address, body, dedupe_key) values ('email', 'x@lc.test', 'a', 'idle:x:email')"),
+    ).rejects.toThrow(/duplicate key/);
+  });
+});

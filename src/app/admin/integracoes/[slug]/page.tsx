@@ -8,6 +8,7 @@ import { requireAdmin } from "@/lib/auth";
 import { formatDateTime } from "@/lib/datetime";
 import { isEmailConfigured } from "@/lib/email";
 import { env } from "@/lib/env";
+import { whatsappProvider, whatsappProviderLabels } from "@/lib/messaging/whatsapp";
 import { OUTGOING_EVENTS } from "@/lib/outgoing-webhooks";
 import { adapters, isProvider, isProviderConfigured } from "@/lib/payments";
 import { createClient } from "@/lib/supabase/server";
@@ -26,6 +27,8 @@ function nameFor(slug: string) {
   if (isProvider(slug)) return PAYMENT_INTEGRATIONS[slug].name;
   if (slug === "email") return OTHER_INTEGRATIONS.email.name;
   if (slug === "funil") return OTHER_INTEGRATIONS.funil.name;
+  if (slug === "whatsapp") return OTHER_INTEGRATIONS.whatsapp.name;
+  if (slug === "cron") return OTHER_INTEGRATIONS.cron.name;
   return null;
 }
 
@@ -159,6 +162,87 @@ export default async function IntegrationPage({ params }: Props) {
             </div>
           </Card>
         </div>
+      </>
+    );
+  }
+
+  if (slug === "whatsapp") {
+    const wa = whatsappProvider();
+    return (
+      <>
+        <PageHeader
+          title={OTHER_INTEGRATIONS.whatsapp.name}
+          back={back}
+          actions={wa ? <Badge>Ativa: {whatsappProviderLabels[wa]}</Badge> : <Badge tone="muted">Para depois</Badge>}
+        />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader title="API oficial (recomendada)" description="WhatsApp Cloud API, da Meta. Sem risco de bloqueio do número." />
+            <Steps
+              steps={[
+                "Em business.facebook.com, crie (ou use) a sua conta empresarial e verifique a empresa.",
+                "Em developers.facebook.com, crie um app do tipo Empresa e adicione o produto WhatsApp.",
+                "Cadastre e verifique o número que vai enviar (não pode estar em uso no WhatsApp do celular).",
+                "Gere um token permanente (Usuário do sistema com permissão whatsapp_business_messaging) e copie o ID do número (Phone number ID).",
+                'Em Modelos de mensagem, crie um modelo de Utilidade em português com o corpo: "Olá, {{1}}! {{2}}" e espere a aprovação.',
+                "Na Vercel, crie as variáveis abaixo (WHATSAPP_TEMPLATE = nome do modelo) e faça Redeploy.",
+              ]}
+            />
+            <div className="mt-5">
+              <EnvList names={["WHATSAPP_PHONE_NUMBER_ID", "WHATSAPP_TOKEN", "WHATSAPP_TEMPLATE"]} />
+            </div>
+            <p className="text-fg-muted mt-3 text-xs">
+              A Meta cobra por conversa iniciada pela empresa (valores em developers.facebook.com → WhatsApp → Preços). Sem modelo aprovado,
+              só chegam mensagens para quem falou com o número nas últimas 24 horas.
+            </p>
+          </Card>
+          <Card>
+            <CardHeader
+              title="Z-API (alternativa)"
+              description="Conecta o WhatsApp do celular por QR Code. Mais rápido de ligar, mas o número pode ser bloqueado se enviar muito."
+            />
+            <Steps
+              steps={[
+                "Crie a conta em z-api.io e uma instância.",
+                "Leia o QR Code com o WhatsApp do número que vai enviar.",
+                "Copie o ID da instância, o Token e o Client-Token (em Segurança).",
+                "Na Vercel, crie WHATSAPP_PROVIDER=zapi e as variáveis abaixo, e faça Redeploy.",
+              ]}
+            />
+            <div className="mt-5">
+              <EnvList names={["WHATSAPP_PROVIDER", "ZAPI_INSTANCE_ID", "ZAPI_TOKEN", "ZAPI_CLIENT_TOKEN"]} />
+            </div>
+            <p className="text-fg-muted mt-3 text-xs">Para não ser bloqueado, a área envia uma mensagem a cada 1,5 segundo pela Z-API.</p>
+          </Card>
+        </div>
+      </>
+    );
+  }
+
+  if (slug === "cron") {
+    return (
+      <>
+        <PageHeader
+          title={OTHER_INTEGRATIONS.cron.name}
+          back={back}
+          actions={process.env.CRON_SECRET ? <Badge>Ativo</Badge> : <Badge tone="muted">Falta configurar</Badge>}
+        />
+        <Card className="max-w-2xl">
+          <CardHeader
+            title="Passo a passo"
+            description="A Vercel chama a área uma vez por dia (9h de Brasília) para rodar as automações de Mensagens."
+          />
+          <Steps
+            steps={[
+              "Na Vercel, crie a variável CRON_SECRET com uma senha longa qualquer (ex.: gere em 1password.com/password-generator, 32+ caracteres).",
+              "Faça Redeploy. O agendamento já vem no projeto (vercel.json) e aparece em Settings → Cron Jobs.",
+              "Ligue as automações em Mensagens → Automações.",
+            ]}
+          />
+          <div className="mt-5">
+            <EnvList names={["CRON_SECRET"]} />
+          </div>
+        </Card>
       </>
     );
   }

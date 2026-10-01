@@ -141,6 +141,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      automations: {
+        Row: {
+          body: string;
+          channels: Database["public"]["Enums"]["message_channel"][];
+          enabled: boolean;
+          key: string;
+          settings: NonNullable<Json>;
+          subject: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          body?: string;
+          channels?: Database["public"]["Enums"]["message_channel"][];
+          enabled?: boolean;
+          key: string;
+          settings?: NonNullable<Json>;
+          subject?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          body?: string;
+          channels?: Database["public"]["Enums"]["message_channel"][];
+          enabled?: boolean;
+          key?: string;
+          settings?: NonNullable<Json>;
+          subject?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       cohort_lessons: {
         Row: {
           cohort_id: string;
@@ -802,6 +832,128 @@ export type Database = {
           },
         ];
       };
+      message_campaigns: {
+        Row: {
+          audience: NonNullable<Json>;
+          body: string;
+          channel: Database["public"]["Enums"]["message_channel"];
+          created_at: string;
+          created_by: string | null;
+          finished_at: string | null;
+          id: string;
+          name: string;
+          purpose: string;
+          status: string;
+          subject: string | null;
+        };
+        Insert: {
+          audience?: NonNullable<Json>;
+          body: string;
+          channel: Database["public"]["Enums"]["message_channel"];
+          created_at?: string;
+          created_by?: string | null;
+          finished_at?: string | null;
+          id?: string;
+          name: string;
+          purpose?: string;
+          status?: string;
+          subject?: string | null;
+        };
+        Update: {
+          audience?: NonNullable<Json>;
+          body?: string;
+          channel?: Database["public"]["Enums"]["message_channel"];
+          created_at?: string;
+          created_by?: string | null;
+          finished_at?: string | null;
+          id?: string;
+          name?: string;
+          purpose?: string;
+          status?: string;
+          subject?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "message_campaigns_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      message_deliveries: {
+        Row: {
+          attempts: number;
+          automation_key: string | null;
+          body: string;
+          campaign_id: string | null;
+          channel: Database["public"]["Enums"]["message_channel"];
+          claimed_at: string | null;
+          created_at: string;
+          dedupe_key: string | null;
+          error: string | null;
+          id: string;
+          provider_message_id: string | null;
+          sent_at: string | null;
+          status: Database["public"]["Enums"]["delivery_status"];
+          subject: string | null;
+          to_address: string;
+          user_id: string | null;
+        };
+        Insert: {
+          attempts?: number;
+          automation_key?: string | null;
+          body: string;
+          campaign_id?: string | null;
+          channel: Database["public"]["Enums"]["message_channel"];
+          claimed_at?: string | null;
+          created_at?: string;
+          dedupe_key?: string | null;
+          error?: string | null;
+          id?: string;
+          provider_message_id?: string | null;
+          sent_at?: string | null;
+          status?: Database["public"]["Enums"]["delivery_status"];
+          subject?: string | null;
+          to_address: string;
+          user_id?: string | null;
+        };
+        Update: {
+          attempts?: number;
+          automation_key?: string | null;
+          body?: string;
+          campaign_id?: string | null;
+          channel?: Database["public"]["Enums"]["message_channel"];
+          claimed_at?: string | null;
+          created_at?: string;
+          dedupe_key?: string | null;
+          error?: string | null;
+          id?: string;
+          provider_message_id?: string | null;
+          sent_at?: string | null;
+          status?: Database["public"]["Enums"]["delivery_status"];
+          subject?: string | null;
+          to_address?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "message_deliveries_campaign_id_fkey";
+            columns: ["campaign_id"];
+            isOneToOne: false;
+            referencedRelation: "message_campaigns";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "message_deliveries_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       modules: {
         Row: {
           course_id: string;
@@ -922,7 +1074,9 @@ export type Database = {
           last_seen_at: string | null;
           marketing_consent: boolean;
           marketing_consent_at: string | null;
+          messages_opt_out_at: string | null;
           role: Database["public"]["Enums"]["user_role"];
+          unsubscribe_token: string;
           updated_at: string;
           whatsapp: string | null;
         };
@@ -935,7 +1089,9 @@ export type Database = {
           last_seen_at?: string | null;
           marketing_consent?: boolean;
           marketing_consent_at?: string | null;
+          messages_opt_out_at?: string | null;
           role?: Database["public"]["Enums"]["user_role"];
+          unsubscribe_token?: string;
           updated_at?: string;
           whatsapp?: string | null;
         };
@@ -948,7 +1104,9 @@ export type Database = {
           last_seen_at?: string | null;
           marketing_consent?: boolean;
           marketing_consent_at?: string | null;
+          messages_opt_out_at?: string | null;
           role?: Database["public"]["Enums"]["user_role"];
+          unsubscribe_token?: string;
           updated_at?: string;
           whatsapp?: string | null;
         };
@@ -1034,6 +1192,42 @@ export type Database = {
     };
     Functions: {
       assert_admin_or_service: { Args: Record<PropertyKey, never>; Returns: undefined };
+      automation_courses_completed: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          completed_at: string;
+          course_id: string;
+          course_title: string;
+          user_id: string;
+        }[];
+      };
+      automation_free_no_purchase: {
+        Args: { p_days: number };
+        Returns: {
+          course_id: string;
+          course_title: string;
+          user_id: string;
+        }[];
+      };
+      automation_idle_students: {
+        Args: { p_days: number };
+        Returns: {
+          course_id: string;
+          course_title: string;
+          last_seen_at: string;
+          user_id: string;
+        }[];
+      };
+      automation_lessons_released: {
+        Args: { p_from: string; p_to: string };
+        Returns: {
+          course_title: string;
+          lesson_id: string;
+          lesson_title: string;
+          released_at: string;
+          user_id: string;
+        }[];
+      };
       can_access_lesson: { Args: { p_lesson_id: string }; Returns: boolean };
       claim_auth_email: { Args: { p_email: string; p_kind: string }; Returns: boolean };
       cohort_lessons_for_user: {
@@ -1145,10 +1339,12 @@ export type Database = {
     Enums: {
       access_start: "purchase" | "cohort_start";
       comment_category: "question" | "complaint" | "praise" | "request" | "technical";
+      delivery_status: "pending" | "sent" | "failed" | "skipped";
       enrollment_origin: "purchase" | "free" | "manual";
       enrollment_status: "active" | "refunded" | "expired";
       lead_access: "direct" | "confirm_email";
       lead_fields: "email" | "whatsapp" | "name_email" | "name_email_whatsapp";
+      message_channel: "email" | "whatsapp";
       payment_provider: "kiwify" | "hotmart" | "yampi" | "mercadopago" | "asaas";
       release_mode: "all" | "weekly" | "fixed_date" | "days_after_join";
       user_role: "student" | "admin";
@@ -1265,10 +1461,12 @@ export const Constants = {
     Enums: {
       access_start: ["purchase", "cohort_start"],
       comment_category: ["question", "complaint", "praise", "request", "technical"],
+      delivery_status: ["pending", "sent", "failed", "skipped"],
       enrollment_origin: ["purchase", "free", "manual"],
       enrollment_status: ["active", "refunded", "expired"],
       lead_access: ["direct", "confirm_email"],
       lead_fields: ["email", "whatsapp", "name_email", "name_email_whatsapp"],
+      message_channel: ["email", "whatsapp"],
       payment_provider: ["kiwify", "hotmart", "yampi", "mercadopago", "asaas"],
       release_mode: ["all", "weekly", "fixed_date", "days_after_join"],
       user_role: ["student", "admin"],

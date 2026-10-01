@@ -8,18 +8,25 @@ export function isEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM);
 }
 
-type Message = { to: string; subject: string; html: string; text: string };
+type Message = { to: string; subject: string; html: string; text: string; headers?: Record<string, string> };
 
-export async function sendEmail(message: Message): Promise<{ ok: boolean; error?: string }> {
+export async function sendEmail(message: Message): Promise<{ ok: boolean; id?: string; error?: string }> {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM;
   if (!key || !from) return { ok: false, error: "email_not_configured" };
 
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await fetch(`${process.env.RESEND_API_URL || "https://api.resend.com"}/emails`, {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to: [message.to], subject: message.subject, html: message.html, text: message.text }),
+      body: JSON.stringify({
+        from,
+        to: [message.to],
+        subject: message.subject,
+        html: message.html,
+        text: message.text,
+        ...(message.headers ? { headers: message.headers } : {}),
+      }),
       signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) {
@@ -27,7 +34,8 @@ export async function sendEmail(message: Message): Promise<{ ok: boolean; error?
       console.error("resend", res.status, body.slice(0, 300));
       return { ok: false, error: `resend_${res.status}` };
     }
-    return { ok: true };
+    const data = (await res.json().catch(() => ({}))) as { id?: string };
+    return { ok: true, id: data.id };
   } catch (error) {
     console.error("resend", error);
     return { ok: false, error: "resend_unreachable" };
@@ -99,5 +107,43 @@ export function accessEmail(to: string, link: string, opts: { name?: string | nu
     subject: `Seu acesso: ${opts.courseTitle}`,
     html: layout({ title, intro, button: "Acessar meu curso", link, footer }),
     text: textVersion(title, intro, link, footer),
+  };
+}
+
+/** Texto com links clicáveis e parágrafos (o admin escreve texto simples). */
+export function textToHtml(text: string): string {
+  return text
+    .trim()
+    .split(/\n{2,}/)
+    .map(
+      (paragraph) =>
+        `<p style="font-size:15px;margin:0 0 14px;line-height:1.6;color:#F5F5F5">${escapeHtml(paragraph)
+          .replace(/(https?:\/\/[^\s<]+[^\s<.,;:!?)])/g, '<a href="$1" style="color:#D63A42">$1</a>')
+          .replace(/\n/g, "<br>")}</p>`,
+    )
+    .join("");
+}
+
+/** Mensagem da Central (aviso, promoção ou automação), sempre com link de descadastro. */
+export function centralEmail(to: string, opts: { subject: string; body: string; unsubscribeUrl: string | null }): Message {
+  const footer = opts.unsubscribeUrl
+    ? `<p style="font-size:12px;color:#9C9CA3;margin:24px 0 0;line-height:1.5">Você recebe estas mensagens porque é aluno de ${escapeHtml(env.appName)}. <a href="${escapeHtml(opts.unsubscribeUrl)}" style="color:#9C9CA3">Não quero mais receber</a>.</p>`
+    : "";
+  const html = `<div style="background:#141416;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;color:#F5F5F5">
+  <div style="max-width:520px;margin:0 auto;background:#1A1A1D;border:1px solid #2C2C30;border-radius:12px;padding:28px">
+    <p style="font-size:20px;font-weight:bold;margin:0 0 20px">${brandHtml()}</p>
+    ${textToHtml(opts.body)}
+    ${footer}
+  </div>
+</div>`;
+  const text = `${opts.body.trim()}${opts.unsubscribeUrl ? `\n\n--\nNão quer mais receber? ${opts.unsubscribeUrl}` : ""}`;
+  return {
+    to,
+    subject: opts.subject,
+    html,
+    text,
+    headers: opts.unsubscribeUrl
+      ? { "List-Unsubscribe": `<${opts.unsubscribeUrl}/um-clique>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" }
+      : undefined,
   };
 }

@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { requireAdmin } from "@/lib/auth";
 import { formatDateTime } from "@/lib/datetime";
 import { isEmailConfigured } from "@/lib/email";
+import { whatsappProvider, whatsappProviderLabels } from "@/lib/messaging/whatsapp";
 import { isProviderConfigured } from "@/lib/payments";
 import type { Provider } from "@/lib/payments/types";
 import { createClient } from "@/lib/supabase/server";
@@ -22,6 +23,7 @@ export default async function IntegrationsPage() {
   for (const e of events ?? []) if (!lastByProvider.has(e.provider)) lastByProvider.set(e.provider, e.received_at);
 
   const providers = Object.keys(PAYMENT_INTEGRATIONS) as Provider[];
+  const wa = whatsappProvider();
 
   return (
     <>
@@ -64,6 +66,22 @@ export default async function IntegrationsPage() {
             summary={OTHER_INTEGRATIONS.email.summary}
             status={isEmailConfigured() ? "active" : "later"}
             footer={isEmailConfigured() ? `Enviando como ${process.env.EMAIL_FROM}` : "Usando o e-mail padrão do Supabase"}
+          />
+          <IntegrationCard
+            href="/admin/integracoes/whatsapp"
+            monogram={OTHER_INTEGRATIONS.whatsapp.monogram}
+            name={OTHER_INTEGRATIONS.whatsapp.name}
+            summary={OTHER_INTEGRATIONS.whatsapp.summary}
+            status={wa ? "active" : "later"}
+            footer={wa ? `Enviando pela ${whatsappProviderLabels[wa]}` : "Não configurado"}
+          />
+          <IntegrationCard
+            href="/admin/integracoes/cron"
+            monogram={OTHER_INTEGRATIONS.cron.monogram}
+            name={OTHER_INTEGRATIONS.cron.name}
+            summary={OTHER_INTEGRATIONS.cron.summary}
+            status={process.env.CRON_SECRET ? "active" : "pending"}
+            footer={process.env.CRON_SECRET ? "Todo dia às 9h" : "Falta o CRON_SECRET"}
           />
         </div>
       </section>

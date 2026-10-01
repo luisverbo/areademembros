@@ -1,9 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import type { FormState } from "@/components/ui/form-message";
 import { requireUser } from "@/lib/auth";
+import { alertUrgentComment } from "@/lib/messaging/automations";
+import { isUrgent } from "@/lib/radar/classify";
 import { createClient } from "@/lib/supabase/server";
 
 export async function setLessonCompleted(lessonId: string, completed: boolean) {
@@ -30,14 +33,20 @@ export async function addComment(
   if (!parsed.success) return { ok: false, errors: { content: [parsed.error.issues[0].message] } };
 
   const supabase = await createClient();
-  const { error } = await supabase.from("comments").insert({
-    lesson_id: lessonId,
-    cohort_id: cohortId,
-    user_id: profile.id,
-    parent_id: parsed.data.parentId,
-    content: parsed.data.content,
-  });
+  const { data: comment, error } = await supabase
+    .from("comments")
+    .insert({
+      lesson_id: lessonId,
+      cohort_id: cohortId,
+      user_id: profile.id,
+      parent_id: parsed.data.parentId,
+      content: parsed.data.content,
+    })
+    .select("id")
+    .single();
   if (error) return { ok: false, message: "Não foi possível publicar o comentário." };
+  // Reembolso, cancelamento, Procon...: avisa o admin na hora (se a automação estiver ligada).
+  if (profile.role !== "admin" && isUrgent(parsed.data.content)) after(() => alertUrgentComment(comment.id));
   revalidatePath(`/aula/${lessonId}`);
   return { ok: true };
 }

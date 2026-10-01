@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/env", () => ({ env: { appName: "LC.Academy", siteUrl: "https://lc.test" } }));
 
-const { accessEmail, escapeHtml, isEmailConfigured, magicLinkEmail, sendEmail } = await import("./email");
+const { accessEmail, centralEmail, escapeHtml, isEmailConfigured, magicLinkEmail, sendEmail, textToHtml } = await import("./email");
 
 afterEach(() => {
   delete process.env.RESEND_API_KEY;
@@ -49,5 +49,35 @@ describe("e-mails", () => {
     process.env.EMAIL_FROM = "x@lc.test";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("bad", { status: 422 })));
     expect(await sendEmail(magicLinkEmail("a@b.c", "https://x"))).toEqual({ ok: false, error: "resend_422" });
+  });
+});
+
+describe("e-mail da Central", () => {
+  it("links clicáveis, parágrafos e texto escapado", () => {
+    const html = textToHtml("Oi <b>Ana</b>!\nVeja https://lc.test/aula/1.\n\nFim");
+    expect(html).toContain("&lt;b&gt;Ana&lt;/b&gt;");
+    expect(html).toContain('<a href="https://lc.test/aula/1" style="color:#D63A42">https://lc.test/aula/1</a>.');
+    expect(html.match(/<p /g)).toHaveLength(2);
+    expect(html).toContain("<br>");
+  });
+
+  it("sempre com descadastro (rodapé e cabeçalho de um clique)", () => {
+    const m = centralEmail("a@b.c", { subject: "Live hoje", body: "Oi!", unsubscribeUrl: "https://lc.test/descadastro/tok" });
+    expect(m.html).toContain('href="https://lc.test/descadastro/tok"');
+    expect(m.text).toContain("https://lc.test/descadastro/tok");
+    expect(m.headers).toEqual({
+      "List-Unsubscribe": "<https://lc.test/descadastro/tok/um-clique>",
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    });
+  });
+
+  it("envia os cabeçalhos ao Resend", async () => {
+    process.env.RESEND_API_KEY = "re_x";
+    process.env.EMAIL_FROM = "LC <a@lc.test>";
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ id: "em_1" }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await sendEmail(centralEmail("a@b.c", { subject: "S", body: "B", unsubscribeUrl: "https://lc.test/d/t" }));
+    expect(result).toEqual({ ok: true, id: "em_1" });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).headers["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
   });
 });

@@ -88,7 +88,11 @@ export default async function StudentPage({ params }: Props) {
         description={
           <>
             {profile.email} · cadastro em {formatDateTime(profile.created_at)}
-            {profile.marketing_consent ? " · aceita mensagens" : " · não aceitou mensagens"}
+            {profile.messages_opt_out_at
+              ? ` · descadastrou-se das mensagens em ${formatDateTime(profile.messages_opt_out_at)}`
+              : profile.marketing_consent
+                ? " · aceita mensagens"
+                : " · não aceitou promoções"}
           </>
         }
         back={{ href: "/admin/alunos", label: "Alunos" }}

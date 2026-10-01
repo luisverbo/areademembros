@@ -40,6 +40,10 @@ export async function GET(request: NextRequest) {
   }
   const bytes = await notebookToPdf(courses, title);
   return new NextResponse(new Uint8Array(bytes), {
-    headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${filename}"`, "Cache-Control": "no-store" },
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Cache-Control": "no-store",
+    },
   });
 }
