@@ -49,6 +49,7 @@ await new Promise((r) => server.listen(4599, r));
 for (const slug of ["e2e-pago", "e2e-free"]) await sb.from("courses").delete().eq("slug", slug);
 await sb.from("outgoing_webhooks").delete().like("name", "e2e%");
 await sb.from("webhook_events").delete().like("idempotency_key", "e2e-%");
+await sb.from("webhook_events").delete().like("idempotency_key", "%990001%");
 const { data: users } = await sb.auth.admin.listUsers({ perPage: 1000 });
 for (const u of users.users.filter((u) => u.email?.startsWith("e2e-wh"))) await sb.auth.admin.deleteUser(u.id);
 
@@ -246,6 +247,47 @@ await step("Webhook de saída recebeu o lead com UTM", async () => {
   const lead = received.find((r) => r.event === "lead.created");
   assert(lead && lead.valid, "lead não chegou");
   assert(lead.body.data.lead.email === "e2e-wh-lia@lc.test" && lead.body.data.utm.utm_campaign === "lancamento", JSON.stringify(lead.body));
+});
+
+await step("Admin: Integrações mostra URLs, status e avisos recebidos", async () => {
+  const { data: adm } = await sb.auth.admin.createUser({
+    email: "e2e-wh-admin@lc.test",
+    email_confirm: true,
+    user_metadata: { full_name: "Admin E2E" },
+  });
+  await must(sb.from("profiles").update({ role: "admin" }).eq("id", adm.user.id));
+  const page = await (await browser.newContext()).newPage();
+  const link = await must(sb.auth.admin.generateLink({ type: "magiclink", email: "e2e-wh-admin@lc.test" }));
+  await page.goto(`${BASE}/auth/confirm?token_hash=${link.properties.hashed_token}&type=email&next=/admin/integracoes`);
+  await page.waitForURL(`${BASE}/admin/integracoes`);
+  await page.getByText(`${BASE}/api/webhooks/kiwify`).waitFor();
+  assert((await page.getByText("Ativa", { exact: true }).count()) >= 3, "Kiwify, Hotmart e Yampi deveriam estar ativas");
+  await page.getByText("MERCADOPAGO_ACCESS_TOKEN").first().waitFor();
+  await page.getByText("order_refunded").first().waitFor();
+  await page.getByText("Produto não ligado a nenhuma turma").first().waitFor();
+  // Teste do webhook de saída pelo botão
+  await page.getByRole("button", { name: "Enviar teste" }).first().click();
+  await page.getByText(/Teste entregue \(HTTP 200\)/).waitFor();
+  assert(
+    received.some((r) => r.event === "test" && r.valid),
+    "teste não chegou",
+  );
+  await page.screenshot({
+    caret: "initial",
+    path: `${process.env.E2E_SHOTS_DIR ?? "test-results/shots"}/c1-integracoes.png`,
+    fullPage: true,
+  });
+
+  // Ficha do aluno com acompanhamento
+  const carla = await must(sb.from("profiles").select("id").eq("email", "e2e-wh-carla@lc.test").single());
+  await page.goto(`${BASE}/admin/alunos/${carla.id}`);
+  await page.getByRole("heading", { name: "Acompanhamento" }).waitFor();
+  await page.getByText("Ainda não entrou na área.").waitFor();
+  const lia = await must(sb.from("profiles").select("id").eq("email", "e2e-wh-lia@lc.test").single());
+  await page.goto(`${BASE}/admin/alunos/${lia.id}`);
+  await page.getByText("Cadastros em cursos grátis").waitFor();
+  await page.getByText(/origem: instagram \/ lancamento/).waitFor();
+  await page.screenshot({ caret: "initial", path: `${process.env.E2E_SHOTS_DIR ?? "test-results/shots"}/c2-ficha.png`, fullPage: true });
 });
 
 await browser.close();

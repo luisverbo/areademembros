@@ -68,3 +68,9 @@ export function formatDateTime(iso: string | null | undefined, timeZone = BUSINE
 }
 
 export const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"] as const;
+
+/** Dias inteiros desde a data (null se não houver data). */
+export function daysSince(iso: string | null | undefined, now = Date.now()): number | null {
+  if (!iso) return null;
+  return Math.floor((now - new Date(iso).getTime()) / 86_400_000);
+}

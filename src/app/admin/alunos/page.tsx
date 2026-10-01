@@ -103,7 +103,7 @@ export default async function StudentsPage({ searchParams }: PageProps<"/admin/a
                 <th className="px-5 py-2.5 font-medium">Nome</th>
                 <th className="py-2.5 font-medium">WhatsApp</th>
                 <th className="py-2.5 font-medium">Matrículas ativas</th>
-                <th className="px-5 py-2.5 text-right font-medium">Cadastro</th>
+                <th className="px-5 py-2.5 text-right font-medium">Último acesso</th>
               </tr>
             </thead>
             <tbody>
@@ -120,7 +120,9 @@ export default async function StudentsPage({ searchParams }: PageProps<"/admin/a
                   </td>
                   <td className="text-fg-soft py-2.5">{s.whatsapp || "—"}</td>
                   <td className="text-fg-soft py-2.5">{s.enrollments.filter((e) => e.status === "active").length}</td>
-                  <td className="text-fg-soft px-5 py-2.5 text-right">{formatDateTime(s.created_at)}</td>
+                  <td className="text-fg-soft px-5 py-2.5 text-right">
+                    {s.last_seen_at ? formatDateTime(s.last_seen_at) : "Nunca entrou"}
+                  </td>
                 </tr>
               ))}
             </tbody>

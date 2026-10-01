@@ -9,6 +9,7 @@ const items = [
   { href: "/admin/cursos", label: "Cursos" },
   { href: "/admin/turmas", label: "Turmas" },
   { href: "/admin/alunos", label: "Alunos" },
+  { href: "/admin/integracoes", label: "Integrações" },
 ];
 
 export function AdminNav() {

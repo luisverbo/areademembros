@@ -69,7 +69,7 @@ Mais estas, também na Vercel:
 
 ## Atualizações do banco
 
-Cada etapa que muda o banco traz um arquivo de atualização em `supabase/setup/` (ex.: `03-atualizacao-etapa-1b.sql`).
+Cada etapa que muda o banco traz um arquivo de atualização em `supabase/setup/` (`03-atualizacao-etapa-1b.sql`, `04-atualizacao-etapa-1c.sql`…).
 Rode no SQL Editor, uma vez, na ordem dos números. O `01` sempre tem o banco completo, para instalar do zero.
 
 ## Vídeos (Bunny Stream)
@@ -79,3 +79,14 @@ Variáveis na Vercel:
 - `BUNNY_TOKEN_KEY`: Stream → sua biblioteca → Security → **Token Authentication** (ative e copie a chave). Secreta.
 
 Na mesma tela de Security, ative **Allowed Domains** só com o domínio do site: assim o vídeo não toca fora da área de membros.
+
+## E-mail pelo Resend (variáveis na Vercel)
+
+- `RESEND_API_KEY`: Resend → API Keys → Create API Key (permissão Sending). Secreta.
+- `EMAIL_FROM`: remetente com o domínio verificado no Resend, ex.: `LC.Academy <acesso@seudominio.com.br>`.
+
+Com isso, o site envia os e-mails de acesso com o visual da área. Não é preciso editar modelos no Supabase.
+
+## Plataformas de pagamento
+
+Tudo em **Admin → Integrações**: a URL de cada plataforma, onde colar e quais variáveis faltam.

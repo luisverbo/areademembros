@@ -233,7 +233,7 @@ Construir **uma etapa por vez**. Cada etapa termina com: tudo funcionando, testa
 Objetivo: a primeira turma da mentoria consegue rodar aqui. Entregue em três partes, cada uma aprovada antes da próxima:
 - **1A — Fundação e admin de conteúdo:** setup, banco + RLS, login, admin de cursos/módulos/aulas/materiais/capas, admin de turmas (liberação, aulas da turma, produtos), duplicar turma, matrícula manual, mudar aluno de turma.
 - **1B — Experiência do aluno:** vitrine, página da aula, progresso, cadeado com data, comentários por turma, materiais, liberar aula para um aluno.
-- **1C — Vendas, grátis e acompanhamento:** webhooks dos 5 provedores, e-mail de acesso, expiração, curso grátis + lead (estratégia de entrada configurável), webhook de saída de leads (FunilPro), ficha do aluno.
+- **1C — Vendas, grátis e acompanhamento** (entregue em 02/10/2026; webhooks validados com avisos simulados, aguardando a primeira venda real de cada plataforma): webhooks dos 5 provedores, e-mail de acesso, expiração, curso grátis + lead (estratégia de entrada configurável), webhook de saída de leads (FunilPro), ficha do aluno.
 
 Lista completa:
 - Setup do projeto (Next.js + Supabase + Tailwind), estrutura de pastas, variáveis de ambiente, `docs/PROJETO.md` salvo.
@@ -306,3 +306,15 @@ Ainda abertas:
 ---
 
 **Agora, sem executar nada:** salve este arquivo em `docs/PROJETO.md`, leia tudo, e me responda com o resumo do seu entendimento, as etapas propostas (o que entra e o que fica de fora em cada uma) e suas dúvidas. Vamos começar pela Etapa 1 só depois que eu aprovar.
+
+---
+
+## 13. Notas de implementação (Etapa 1C)
+
+- **Webhooks de entrada:** `/api/webhooks/{kiwify|hotmart|yampi|mercadopago|asaas}`. Chaves nas variáveis de ambiente (ver `/admin/integracoes`).
+  - Kiwify: `?signature=` HMAC-SHA1 · Hotmart: `X-HOTMART-HOTTOK` · Yampi: `X-Yampi-Hmac-SHA256` (base64) · Mercado Pago: `x-signature` + busca do pagamento na API · Asaas: `asaas-access-token` + busca do cliente na API.
+  - Mercado Pago e Asaas não têm "produto": o ID cadastrado na turma é a referência externa / ID do link de pagamento.
+  - Pontos a confirmar na primeira venda real (registrados em `webhook_events`): fórmula exata da assinatura da Kiwify, status de reembolso da Yampi, ID de produto em links manuais do Mercado Pago.
+- **E-mails:** enviados pelo próprio site via Resend (o plano grátis do Supabase não permite editar os modelos). Sem Resend, login e troca de senha usam o e-mail padrão do Supabase e o e-mail de boas-vindas da compra não sai.
+- **Webhooks de saída** (FunilPro etc.): `lead.created`, `purchase.approved`, `purchase.refunded`, assinados com `X-LC-Signature: sha256=<HMAC do corpo>`.
+- **Lead do curso grátis:** contas de aluno pagante ou admin nunca abrem só digitando o e-mail; pedem a senha.
