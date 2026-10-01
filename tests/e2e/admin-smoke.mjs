@@ -123,11 +123,12 @@ await step("modules and lessons", async () => {
   await page.screenshot({ caret: "initial", path: `${SHOTS}/04-lesson.png`, fullPage: true });
 });
 
-await step("youtube on paid lesson is rejected", async () => {
+await step("youtube on paid lesson is allowed with warning", async () => {
   await page.selectOption("#video_provider", "youtube");
+  await page.getByText("quem tiver o link do vídeo consegue assistir").waitFor();
   await page.fill("#video_id", "https://youtu.be/dQw4w9WgXcQ");
   await page.click("text=Salvar aula");
-  await page.getByText("YouTube só pode ser usado em aula ou curso grátis").waitFor();
+  await page.getByText("Aula salva.").waitFor();
 });
 
 await step("material upload", async () => {

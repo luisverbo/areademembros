@@ -18,7 +18,7 @@ São uns 10 minutos. Faça na ordem.
 ## 2. Criar o seu usuário admin
 
 1. **Authentication → Users → Add user → Create new user**.
-2. E-mail: `luisverbo@gmail.com` (ou o que você vai usar). Senha: qualquer uma (não será usada). Marque **Auto Confirm User**.
+2. E-mail: `luisverbo@gmail.com` (ou o que você vai usar). Senha: a que você vai usar para entrar no site. Marque **Auto Confirm User**.
 3. Volte ao **SQL Editor**, cole o conteúdo de [`supabase/setup/02-tornar-admin.sql`](../supabase/setup/02-tornar-admin.sql) e rode.
    O resultado deve mostrar o seu e-mail com `role = admin`.
 
@@ -32,6 +32,10 @@ São uns 10 minutos. Faça na ordem.
 - **Subject:** `Seu link de acesso`
 - **Body:** cole o conteúdo de [`supabase/templates/magic_link.html`](../supabase/templates/magic_link.html).
   (Esse modelo funciona mesmo quando o aluno abre o e-mail em outro aparelho.)
+
+**Authentication → Emails → Templates → Reset Password** (criar/trocar senha)
+- **Subject:** `Crie sua senha de acesso`
+- **Body:** cole o conteúdo de [`supabase/templates/recovery.html`](../supabase/templates/recovery.html).
 
 **Authentication → Sign In / Providers**
 - Em **Email**, mantenha ativo.

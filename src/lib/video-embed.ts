@@ -10,7 +10,7 @@ const BUNNY_TOKEN_TTL_SECONDS = 6 * 60 * 60;
  * URL do player embutido.
  *  - Bunny: link assinado com validade (Token Authentication do Bunny Stream). Sem a chave
  *    configurada, gera o link simples (só para teste; em produção a chave é obrigatória).
- *  - YouTube: só para conteúdo grátis (regra validada no admin).
+ *  - YouTube: vídeo não listado (liberado também para aulas pagas até a conta do Bunny).
  */
 export function embedFor(provider: "bunny" | "youtube", videoId: string | null): Embed {
   if (!videoId) return null;

@@ -48,12 +48,8 @@ export async function updateLesson(
   }
 
   const supabase = await createClient();
-  const { data: course } = await supabase.from("courses").select("is_free").eq("id", courseId).single();
-
-  // Regra do projeto: YouTube só para conteúdo grátis.
-  if (video_provider === "youtube" && !lesson.is_free && !course?.is_free) {
-    return { ok: false, errors: { video_provider: ["YouTube só pode ser usado em aula ou curso grátis. Use o Bunny para aulas pagas."] } };
-  }
+  // YouTube liberado também em aula paga (decisão de 01/10/2026, até assinar o Bunny).
+  // O admin mostra o aviso de que o vídeo fica menos protegido.
   if (lesson.is_published && !videoId) {
     return { ok: false, errors: { video_id: ["Para publicar, informe o vídeo da aula."] } };
   }

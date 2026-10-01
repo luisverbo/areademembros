@@ -28,7 +28,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/entrar">) 
         </p>
         <div className="border-border bg-surface rounded-[var(--radius-card)] border p-6">
           <h1 className="text-xl font-semibold">Entrar</h1>
-          <p className="text-fg-muted mt-1 mb-6 text-sm">Sem senha: enviamos um link de acesso para o seu e-mail.</p>
+          <p className="text-fg-muted mt-1 mb-6 text-sm">Use seu e-mail e senha, ou receba um link de acesso.</p>
           {error ? (
             <p role="alert" className="border-accent/40 bg-accent/10 mb-4 rounded-lg border px-3 py-2 text-sm">
               {error}

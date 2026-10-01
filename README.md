@@ -48,7 +48,7 @@ update public.profiles set role = 'admin' where email = 'seu@email.com';
 docs/PROJETO.md                 documento do projeto (decisões, etapas)
 supabase/migrations/            schema, RLS, storage e funções (fonte da verdade do banco)
 supabase/templates/             e-mail do link mágico (pt-BR)
-src/app/entrar, src/app/auth    login por link mágico
+src/app/entrar, src/app/auth    login com senha ou link mágico, primeiro acesso / esqueci a senha
 src/app/admin/                  painel admin: cursos, aulas, turmas, alunos
 src/app/(aluno)/                vitrine, página do curso e página da aula
 src/lib/                        Supabase, auth, datas (fuso São Paulo), formulários
@@ -59,7 +59,7 @@ tests/db, tests/e2e             testes de banco e de navegador
 
 - **Liberação de aulas é calculada no banco** (`lesson_release_at`), no fuso `America/Sao_Paulo`, e aplicada pelo RLS.
   O aluno só lê o conteúdo (`lesson_contents`, materiais) das aulas liberadas; reembolso ou expiração cortam o acesso na hora.
-- **Vídeo nunca fica no servidor**: Bunny Stream para aulas pagas; YouTube só para conteúdo grátis (validado no admin).
+- **Vídeo nunca fica no servidor**: Bunny Stream ou YouTube não listado (provisório nas aulas pagas, com aviso no admin).
 - **Nenhuma chave no código**: tudo em variáveis de ambiente (`.env.example`). `SUPABASE_SERVICE_ROLE_KEY` só no servidor.
 
 ## Configuração do Supabase em produção

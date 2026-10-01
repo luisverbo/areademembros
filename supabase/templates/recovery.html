@@ -1,0 +1,14 @@
+<!-- Template de "criar/redefinir senha". Copie em: Supabase > Authentication > Emails > Reset Password.
+     Usa token_hash para funcionar mesmo abrindo o e-mail em outro aparelho. -->
+<div style="background:#141416;padding:32px 16px;font-family:Arial,Helvetica,sans-serif;color:#F5F5F5">
+  <div style="max-width:440px;margin:0 auto;background:#1A1A1D;border:1px solid #2C2C30;border-radius:12px;padding:28px">
+    <p style="font-size:20px;font-weight:bold;margin:0 0 20px">LC<span style="color:#D63A42">.</span>Academy</p>
+    <p style="font-size:16px;margin:0 0 8px">Crie sua senha de acesso.</p>
+    <p style="font-size:14px;color:#9C9CA3;margin:0 0 24px">Clique no botão para criar (ou trocar) a sua senha. O link vale por 1 hora e só pode ser usado uma vez.</p>
+    <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=recovery"
+       style="display:inline-block;background:#D63A42;color:#fff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:8px">
+      Criar minha senha
+    </a>
+    <p style="font-size:12px;color:#9C9CA3;margin:24px 0 0">Se você não pediu isso, pode ignorar este e-mail. Sua senha atual continua valendo.</p>
+  </div>
+</div>

@@ -50,10 +50,7 @@ export function LessonForm({ courseId, lesson, content, modules }: Props) {
       </Card>
 
       <Card>
-        <CardHeader
-          title="Vídeo"
-          description="O vídeo fica no Bunny Stream (pago) ou no YouTube não listado (só grátis). Nunca no nosso servidor."
-        />
+        <CardHeader title="Vídeo" description="O vídeo fica no Bunny Stream ou no YouTube (não listado). Nunca no nosso servidor." />
         <div className="grid gap-4 md:grid-cols-[1fr_2fr_1fr]">
           <Field label="Onde está" htmlFor="video_provider" error={e.video_provider}>
             <Select
@@ -63,14 +60,18 @@ export function LessonForm({ courseId, lesson, content, modules }: Props) {
               onChange={(ev) => setProvider(ev.target.value as typeof provider)}
             >
               <option value="bunny">Bunny Stream</option>
-              <option value="youtube">YouTube (só grátis)</option>
+              <option value="youtube">YouTube (não listado)</option>
             </Select>
           </Field>
           <Field
             label={provider === "bunny" ? "ID do vídeo no Bunny" : "ID ou link do YouTube"}
             htmlFor="video_id"
             error={e.video_id}
-            hint={provider === "bunny" ? "Pode colar o link de embed; pegamos o ID." : "Ex.: https://youtu.be/…"}
+            hint={
+              provider === "bunny"
+                ? "Pode colar o link de embed; pegamos o ID."
+                : "Cole o link do vídeo. No YouTube, deixe o vídeo como Não listado (privado não toca no site)."
+            }
           >
             <Input id="video_id" name="video_id" defaultValue={content?.video_id ?? ""} autoComplete="off" />
           </Field>
@@ -83,6 +84,12 @@ export function LessonForm({ courseId, lesson, content, modules }: Props) {
             />
           </Field>
         </div>
+        {provider === "youtube" ? (
+          <p className="border-border bg-surface-2 text-fg-soft mt-4 rounded-lg border px-3 py-2 text-sm">
+            Aviso: no YouTube, quem tiver o link do vídeo consegue assistir fora da área de membros. Para aulas pagas, o Bunny protege
+            melhor; dá para trocar depois, aula por aula.
+          </p>
+        ) : null}
         <div className="mt-4 max-w-sm">
           <ImageUpload
             name="thumbnail_url"

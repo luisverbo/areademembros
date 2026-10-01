@@ -54,13 +54,11 @@ async function lesson(moduleId, title, position, provider = "bunny", extra = {})
       .single(),
   );
   await must(
-    sb
-      .from("lesson_contents")
-      .insert({
-        lesson_id: l.id,
-        video_provider: provider,
-        video_id: provider === "youtube" ? "dQw4w9WgXcQ" : "3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
-      }),
+    sb.from("lesson_contents").insert({
+      lesson_id: l.id,
+      video_provider: provider,
+      video_id: provider === "youtube" ? "dQw4w9WgXcQ" : "3f2b1c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+    }),
   );
   return l.id;
 }

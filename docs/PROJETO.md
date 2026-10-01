@@ -34,12 +34,12 @@ Além de entregar as aulas, a área **vende**: o aluno vê o portfólio inteiro,
 | Decisão | Escolha |
 | --- | --- |
 | Separado do FunilPro | Sim, projeto e banco próprios. Integração apenas por webhook. |
-| Hospedagem de vídeo | Fora do site. **Bunny Stream** para aulas pagas; **YouTube (não listado)** só para conteúdo grátis. Nunca hospedar vídeo no próprio servidor. |
+| Hospedagem de vídeo | Fora do site. **Bunny Stream** (recomendado para aulas pagas) e **YouTube não listado**, liberado também para aulas pagas até a conta do Bunny (decisão de 01/10/2026; o admin mostra o aviso de menor proteção). Nunca hospedar vídeo no próprio servidor. |
 | Download de vídeo | **Proibido.** Só as anotações do aluno podem ser exportadas. |
 | Integração externa | Só com as plataformas de pagamento. Toda a inteligência fica dentro da área. |
 | Turmas | Um curso pode ter várias turmas, cada uma com aulas e liberação próprias. |
 | Cursos grátis | Existem, com link público, cadastro rápido e vitrine aberta. |
-| Login | Link mágico por e-mail (sem senha). |
+| Login | **E-mail e senha** (principal) + link mágico por e-mail como alternativa. Primeiro acesso e "esqueci a senha" por link no e-mail (decisão de 01/10/2026). |
 
 ---
 
@@ -268,7 +268,7 @@ Lista completa:
 
 ## 11. Regras e cuidados (obrigatórios)
 
-- **Vídeo nunca pode ser baixado.** Bunny com token + domínio restrito. YouTube só para grátis.
+- **Vídeo nunca pode ser baixado.** Bunny com token + domínio restrito. YouTube (não listado) é provisório nas aulas pagas: quem tiver o link assiste fora da área.
 - **Nunca hospedar vídeo no servidor.**
 - **Reembolso/chargeback remove o acesso automaticamente.**
 - **WhatsApp pela API oficial** (individual e em massa); Z-API só como alternativa opcional.
