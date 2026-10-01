@@ -747,9 +747,58 @@ export type Database = {
       enrollment_is_active: { Args: { e: Database["public"]["Tables"]["enrollments"]["Row"] }; Returns: boolean };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_enrolled_in_cohort: { Args: { p_cohort_id: string }; Returns: boolean };
+      lesson_comments: {
+        Args: { p_cohort_id?: string; p_lesson_id: string };
+        Returns: {
+          author_id: string;
+          author_is_admin: boolean;
+          author_name: string;
+          content: string;
+          created_at: string;
+          id: string;
+          parent_id: string;
+        }[];
+      };
       lesson_course_id: { Args: { p_lesson_id: string }; Returns: string };
       lesson_release_at: { Args: { p_cohort_id: string; p_enrolled_at: string; p_lesson_id: string }; Returns: string };
+      record_lesson_progress: {
+        Args: { p_duration_seconds: number; p_lesson_id: string; p_position_seconds: number };
+        Returns: {
+          completed_at: string | null;
+          last_accessed_at: string;
+          last_position_seconds: number;
+          lesson_id: string;
+          percent: number;
+          seconds_watched: number;
+          user_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "lesson_progress";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       set_cohort_lessons: { Args: { p_cohort_id: string; p_items: Json }; Returns: undefined };
+      set_lesson_completed: {
+        Args: { p_completed: boolean; p_lesson_id: string };
+        Returns: {
+          completed_at: string | null;
+          last_accessed_at: string;
+          last_position_seconds: number;
+          lesson_id: string;
+          percent: number;
+          seconds_watched: number;
+          user_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "lesson_progress";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      touch_last_seen: { Args: Record<PropertyKey, never>; Returns: undefined };
     };
     Enums: {
       access_start: "purchase" | "cohort_start";

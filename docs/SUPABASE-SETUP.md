@@ -63,6 +63,15 @@ Mais estas, também na Vercel:
 
 ---
 
-## Atualizações futuras do banco
+## Atualizações do banco
 
-Quando uma etapa nova trouxer mudanças no banco, eu gero de novo os arquivos em `supabase/setup/` só com o que mudou e aviso qual rodar.
+Cada etapa que muda o banco traz um arquivo de atualização em `supabase/setup/` (ex.: `03-atualizacao-etapa-1b.sql`).
+Rode no SQL Editor, uma vez, na ordem dos números. O `01` sempre tem o banco completo, para instalar do zero.
+
+## Vídeos (Bunny Stream)
+
+Variáveis na Vercel:
+- `BUNNY_LIBRARY_ID`: Stream → sua biblioteca → API → Library ID
+- `BUNNY_TOKEN_KEY`: Stream → sua biblioteca → Security → **Token Authentication** (ative e copie a chave). Secreta.
+
+Na mesma tela de Security, ative **Allowed Domains** só com o domínio do site: assim o vídeo não toca fora da área de membros.

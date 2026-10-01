@@ -9,8 +9,8 @@ Stack: Next.js 16 (App Router) · TypeScript · Tailwind 4 · Supabase (Postgres
 
 | Etapa | Situação |
 | --- | --- |
-| 1A — Fundação e admin de conteúdo | ✅ entregue para revisão |
-| 1B — Experiência do aluno (vitrine, aula) | próxima |
+| 1A — Fundação e admin de conteúdo | ✅ entregue |
+| 1B — Experiência do aluno (vitrine, curso, aula, progresso, comentários) | ✅ entregue para revisão |
 | 1C — Webhooks (Kiwify, Hotmart, Yampi, Mercado Pago, Asaas), grátis, ficha do aluno | depois |
 
 ## Rodando localmente
@@ -39,6 +39,7 @@ update public.profiles set role = 'admin' where email = 'seu@email.com';
 | `npm run test:unit` | testes de funções (datas, formulários, vídeo) |
 | `npm run test:db` | testes das migrações, RLS e regras de liberação (precisa de um Postgres em `TEST_DATABASE_URL`) |
 | `node tests/e2e/admin-smoke.mjs` | teste ponta a ponta do admin no navegador (com `npm run dev` rodando) |
+| `node tests/e2e/student-smoke.mjs` | teste ponta a ponta da área do aluno (cria e apaga os próprios dados) |
 | `npm run db:types` | regenera `src/lib/database.types.ts` a partir do banco local |
 
 ## Estrutura
@@ -49,6 +50,7 @@ supabase/migrations/            schema, RLS, storage e funções (fonte da verda
 supabase/templates/             e-mail do link mágico (pt-BR)
 src/app/entrar, src/app/auth    login por link mágico
 src/app/admin/                  painel admin: cursos, aulas, turmas, alunos
+src/app/(aluno)/                vitrine, página do curso e página da aula
 src/lib/                        Supabase, auth, datas (fuso São Paulo), formulários
 tests/db, tests/e2e             testes de banco e de navegador
 ```

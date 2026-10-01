@@ -1,21 +1,33 @@
-// Junta todas as migrações num único arquivo para colar no SQL Editor do Supabase.
-// Uso: node scripts/build-setup-sql.mjs  (gera supabase/setup/01-instalar-banco.sql)
+// Junta as migrações num arquivo para colar no SQL Editor do Supabase.
+//   node scripts/build-setup-sql.mjs                         -> supabase/setup/01-instalar-banco.sql (instalação completa)
+//   node scripts/build-setup-sql.mjs --since 20261001120300 --out supabase/setup/03-x.sql
+//                                                            -> só as migrações DEPOIS dessa versão (atualização)
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+
+const args = process.argv.slice(2);
+const since = args.includes("--since") ? args[args.indexOf("--since") + 1] : null;
+const out = args.includes("--out") ? args[args.indexOf("--out") + 1] : "supabase/setup/01-instalar-banco.sql";
 
 const dir = path.resolve(import.meta.dirname, "../supabase/migrations");
 const files = readdirSync(dir)
   .filter((f) => f.endsWith(".sql"))
-  .sort();
+  .sort()
+  .filter((f) => !since || f.split("_")[0] > since);
+if (!files.length) {
+  console.error("Nenhuma migração nova.");
+  process.exit(1);
+}
 
 const parts = files.map((f) => `-- >>> ${f}\n${readFileSync(path.join(dir, f), "utf8").trim()}\n`);
 
 const header = `-- =============================================================================
--- LC.Academy — instalação completa do banco (gerado automaticamente; não edite)
--- Origem: supabase/migrations/ (${files.length} migrações)
+-- LC.Academy — ${since ? "ATUALIZAÇÃO do banco" : "instalação completa do banco"} (gerado automaticamente; não edite)
+-- Migrações: ${files.map((f) => f.split("_")[0]).join(", ")}
 --
 -- Como usar: Supabase > SQL Editor > New query > cole TUDO > Run.
--- Rode UMA vez, num projeto novo. Tudo roda numa transação: se algo falhar, nada é aplicado.
+-- ${since ? "Rode UMA vez, num banco que já tem a instalação anterior." : "Rode UMA vez, num projeto novo."}
+-- Tudo roda numa transação: se algo falhar, nada é aplicado.
 -- =============================================================================
 
 begin;
@@ -33,5 +45,5 @@ on conflict (version) do nothing;
 commit;
 `;
 
-writeFileSync(path.resolve(import.meta.dirname, "../supabase/setup/01-instalar-banco.sql"), header + parts.join("\n") + footer);
-console.log(`ok: ${files.length} migrações`);
+writeFileSync(path.resolve(import.meta.dirname, "..", out), header + parts.join("\n") + footer);
+console.log(`ok: ${out} (${files.length} migrações)`);

@@ -498,3 +498,62 @@ describe("regras de acesso (decisões de 01/10)", () => {
     expect(copy.access_starts_from).toBe("cohort_start");
   });
 });
+
+describe("progresso das aulas", () => {
+  it("registra posição, só sobe o percentual e conclui aos 90%", async () => {
+    await as(db, aliceId, async () => {
+      await q("select record_lesson_progress($1, 300, 1000)", [lessons[0]]);
+      await q("select record_lesson_progress($1, 100, 1000)", [lessons[0]]);
+      const [p] = await q<{ percent: string; last_position_seconds: number; completed_at: Date | null }>(
+        "select * from lesson_progress where user_id = $1 and lesson_id = $2",
+        [aliceId, lessons[0]],
+      );
+      expect(Number(p.percent)).toBe(30);
+      expect(p.last_position_seconds).toBe(100);
+      expect(p.completed_at).toBeNull();
+      await q("select record_lesson_progress($1, 920, 1000)", [lessons[0]]);
+      const [done] = await q<{ completed_at: Date | null }>(
+        "select completed_at from lesson_progress where user_id = $1 and lesson_id = $2",
+        [aliceId, lessons[0]],
+      );
+      expect(done.completed_at).not.toBeNull();
+    });
+  });
+
+  it("marcar e desmarcar como concluída", async () => {
+    await as(db, aliceId, async () => {
+      const [a] = await q<{ completed_at: Date | null; percent: string }>("select * from set_lesson_completed($1, true)", [lessons[1]]);
+      expect(a.completed_at).not.toBeNull();
+      expect(Number(a.percent)).toBe(100);
+      const [b] = await q<{ completed_at: Date | null }>("select * from set_lesson_completed($1, false)", [lessons[1]]);
+      expect(b.completed_at).toBeNull();
+    });
+  });
+
+  it("não grava progresso em aula sem acesso", async () => {
+    await as(db, carolId, async () => {
+      await expect(db.query("select record_lesson_progress($1, 10, 100)", [lessons[0]])).rejects.toThrow(/row-level security/);
+    });
+  });
+
+  it("visitante não chama as funções de progresso", async () => {
+    await as(db, null, async () => {
+      await expect(db.query("select record_lesson_progress($1, 10, 100)", [lessons[0]])).rejects.toThrow(/permission denied/);
+    });
+  });
+});
+
+describe("comentários com nome do autor", () => {
+  it("mostra nome curto, nunca o e-mail, e respeita a turma", async () => {
+    await q("update profiles set full_name = 'Alice Maria Souza' where id = $1", [aliceId]);
+    const rows = await as(db, aliceId, () =>
+      q<{ author_name: string; author_is_admin: boolean }>("select * from lesson_comments($1, $2)", [lessons[0], cohortA]),
+    );
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0].author_name).toBe("Alice S.");
+    expect(JSON.stringify(rows)).not.toContain("@");
+    // Bob (turma B) não lê comentários da turma A
+    const bob = await as(db, bobId, () => q("select * from lesson_comments($1, $2)", [lessons[0], cohortA]));
+    expect(bob).toHaveLength(0);
+  });
+});
