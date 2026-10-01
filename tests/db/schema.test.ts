@@ -598,3 +598,56 @@ describe("limite de e-mails de acesso", () => {
     });
   });
 });
+
+describe("transcrição, Professor IA e busca (2A)", () => {
+  it("busca em português só nas aulas liberadas para o aluno", async () => {
+    await q(
+      `insert into lesson_transcript_segments (lesson_id, start_seconds, text) values
+       ($1, 65, 'Agora vamos conectar o WhatsApp na ferramenta de automação'),
+       ($2, 10, 'Nesta aula conectamos o WhatsApp Business ao CRM')`,
+      [lessons[0], lessons[3]],
+    );
+    // Bob (turma B) só tem as aulas 1 e 2
+    const bob = await as(db, bobId, () =>
+      q<{ lesson_id: string; start_seconds: number }>("select * from search_lesson_segments('como conecto o whatsapp')"),
+    );
+    expect(bob.map((r) => r.lesson_id)).toEqual([lessons[0]]);
+    expect(bob[0].start_seconds).toBe(65);
+    // Alice (turma A) vê as duas
+    const alice = await as(db, aliceId, () => q("select * from search_lesson_segments('whatsapp')"));
+    expect(alice).toHaveLength(2);
+    // Carol (sem matrícula) não vê nada
+    expect(await as(db, carolId, () => q("select * from search_lesson_segments('whatsapp')"))).toHaveLength(0);
+  });
+
+  it("aluno não lê transcrição de aula travada", async () => {
+    const rows = await as(db, bobId, () => q("select lesson_id from lesson_transcript_segments"));
+    expect(rows.every((r) => r.lesson_id !== lessons[3])).toBe(true);
+  });
+
+  it("conversa com o Professor IA é privada e exige acesso à aula", async () => {
+    const [conv] = await as(db, aliceId, async () => {
+      const rows = await q<{ id: string }>("insert into ai_conversations (user_id, lesson_id) values ($1, $2) returning id", [
+        aliceId,
+        lessons[0],
+      ]);
+      await q("insert into ai_messages (conversation_id, role, content) values ($1, 'user', 'Dúvida')", [rows[0].id]);
+      return rows;
+    });
+    expect(conv.id).toBeTruthy();
+    // Carol não cria conversa numa aula que não pode ver
+    await as(db, carolId, async () => {
+      await expect(db.query("insert into ai_conversations (user_id, lesson_id) values ($1, $2)", [carolId, lessons[0]])).rejects.toThrow(
+        /row-level security/,
+      );
+    });
+    // Grava de verdade e confere privacidade
+    const [{ id }] = await q<{ id: string }>("insert into ai_conversations (user_id, lesson_id) values ($1, $2) returning id", [
+      aliceId,
+      lessons[1],
+    ]);
+    await q("insert into ai_messages (conversation_id, role, content) values ($1, 'user', 'Pergunta da Alice')", [id]);
+    expect(await as(db, bobId, () => q("select * from ai_messages"))).toHaveLength(0);
+    expect((await as(db, adminId, () => q("select * from ai_messages"))).length).toBeGreaterThan(0);
+  });
+});

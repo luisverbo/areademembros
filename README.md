@@ -11,7 +11,10 @@ Stack: Next.js 16 (App Router) · TypeScript · Tailwind 4 · Supabase (Postgres
 | --- | --- |
 | 1A — Fundação e admin de conteúdo | ✅ entregue |
 | 1B — Experiência do aluno (vitrine, curso, aula, progresso, comentários) | ✅ entregue |
-| 1C — Webhooks (Kiwify, Hotmart, Yampi, Mercado Pago, Asaas), e-mail (Resend), curso grátis + lead, webhooks de saída, ficha do aluno | ✅ entregue para revisão |
+| 1C — Webhooks (Kiwify, Hotmart, Yampi, Mercado Pago, Asaas), e-mail (Resend), curso grátis + lead, webhooks de saída, ficha do aluno | ✅ entregue |
+| 2A — Transcrição, resumo e checklist por IA, Professor IA, busca inteligente | ✅ entregue para revisão |
+| 2B — Caderno, prévia estilo trailer, botão de oferta no vídeo | próxima |
+| 2C — Radar de Comentários | depois |
 
 ## Rodando localmente
 
@@ -42,6 +45,7 @@ update public.profiles set role = 'admin' where email = 'seu@email.com';
 | `node tests/e2e/student-smoke.mjs` | teste ponta a ponta da área do aluno (cria e apaga os próprios dados) |
 | `node tests/e2e/password-smoke.mjs` | login com senha e primeiro acesso |
 | `node tests/e2e/webhooks-smoke.mjs` | webhooks de pagamento, curso grátis, webhooks de saída e Integrações |
+| `node tests/e2e/ai-smoke.mjs` | transcrição, resumo na aula, busca e Professor IA (sem chave da IA) |
 | `npm run db:types` | regenera `src/lib/database.types.ts` a partir do banco local |
 
 ## Estrutura

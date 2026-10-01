@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Brand } from "@/components/brand";
+import { SparkIcon } from "@/components/icons";
 import { UserMenu } from "@/components/user-menu";
 import type { Profile } from "@/lib/auth";
 
@@ -19,7 +20,17 @@ export function SiteHeader({ profile }: { profile: Profile }) {
           ) : null}
         </nav>
       </div>
-      <UserMenu profile={profile} />
+      <div className="flex items-center gap-3 md:gap-5">
+        <Link
+          href="/busca"
+          className="border-border text-fg-soft hover:border-fg-muted hover:text-fg flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors"
+        >
+          <SparkIcon width={14} height={14} className="text-accent" />
+          <span className="hidden sm:inline">Pergunte à IA</span>
+          <span className="sm:hidden">IA</span>
+        </Link>
+        <UserMenu profile={profile} />
+      </div>
     </header>
   );
 }

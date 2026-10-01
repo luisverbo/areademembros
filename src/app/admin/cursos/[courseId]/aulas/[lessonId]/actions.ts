@@ -2,11 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
 import type { FormState } from "@/components/ui/form-message";
 import { requireAdmin } from "@/lib/auth";
 import { dbErrorMessage, formFields, parseForm } from "@/lib/forms";
+import { generateLessonSummary } from "@/lib/ai/lesson-summary";
 import { createClient } from "@/lib/supabase/server";
+import { parseTranscript } from "@/lib/transcript";
 import { normalizeVideoId } from "@/lib/video";
 
 const schema = z.object({
@@ -107,5 +110,59 @@ export async function deleteMaterial(materialId: string, lessonId: string, cours
   const supabase = await createClient();
   const { data } = await supabase.from("lesson_materials").delete().eq("id", materialId).select("storage_path").single();
   if (data) await supabase.storage.from("lesson-materials").remove([data.storage_path]);
+  revalidatePath(`/admin/cursos/${courseId}/aulas/${lessonId}`);
+}
+
+// ---------------------------------------------------------------------------
+// Transcrição e IA (Etapa 2A)
+// ---------------------------------------------------------------------------
+
+export async function saveTranscript(
+  lessonId: string,
+  courseId: string,
+  _prev: FormState | undefined,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+  const raw = String(formData.get("transcript") ?? "");
+  if (raw.length > 2_000_000) return { ok: false, message: "Transcrição muito grande (máx. 2 MB de texto)." };
+  const parsed = parseTranscript(raw);
+
+  const supabase = await createClient();
+  const { error: delError } = await supabase.from("lesson_transcript_segments").delete().eq("lesson_id", lessonId);
+  if (delError) return { ok: false, message: dbErrorMessage(delError) };
+
+  if (parsed.segments.length) {
+    const rows = parsed.segments.map((s) => ({ lesson_id: lessonId, start_seconds: s.start, end_seconds: s.end, text: s.text }));
+    for (let i = 0; i < rows.length; i += 500) {
+      const { error } = await supabase.from("lesson_transcript_segments").insert(rows.slice(i, i + 500));
+      if (error) return { ok: false, message: dbErrorMessage(error) };
+    }
+  }
+  const { error } = await supabase
+    .from("lesson_contents")
+    .upsert({
+      lesson_id: lessonId,
+      transcript: parsed.text || null,
+      ai_status: parsed.segments.length ? "processing" : "idle",
+      ai_error: null,
+    });
+  if (error) return { ok: false, message: dbErrorMessage(error) };
+
+  if (parsed.segments.length) after(() => generateLessonSummary(lessonId));
+  revalidatePath(`/admin/cursos/${courseId}/aulas/${lessonId}`);
+  return {
+    ok: true,
+    message: parsed.segments.length
+      ? `Transcrição salva (${parsed.segments.length} trechos${parsed.hasTimestamps ? ", com minutos" : ", sem minutos"}). A IA está gerando o resumo.`
+      : "Transcrição removida.",
+  };
+}
+
+export async function regenerateSummary(lessonId: string, courseId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+  await supabase.from("lesson_contents").update({ ai_status: "processing", ai_error: null }).eq("lesson_id", lessonId);
+  after(() => generateLessonSummary(lessonId));
   revalidatePath(`/admin/cursos/${courseId}/aulas/${lessonId}`);
 }

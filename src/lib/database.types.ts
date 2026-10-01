@@ -20,6 +20,106 @@ export type Database = {
   };
   public: {
     Tables: {
+      ai_conversations: {
+        Row: {
+          created_at: string;
+          id: string;
+          lesson_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          lesson_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          lesson_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_lesson_id_fkey";
+            columns: ["lesson_id"];
+            isOneToOne: false;
+            referencedRelation: "lessons";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ai_conversations_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      ai_messages: {
+        Row: {
+          content: string;
+          conversation_id: string;
+          created_at: string;
+          id: string;
+          role: string;
+        };
+        Insert: {
+          content: string;
+          conversation_id: string;
+          created_at?: string;
+          id?: string;
+          role: string;
+        };
+        Update: {
+          content?: string;
+          conversation_id?: string;
+          created_at?: string;
+          id?: string;
+          role?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "ai_conversations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      ai_searches: {
+        Row: {
+          created_at: string;
+          id: string;
+          query: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          query: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          query?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_searches_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       auth_email_log: {
         Row: {
           email: string;
@@ -432,7 +532,10 @@ export type Database = {
       lesson_contents: {
         Row: {
           ai_checklist: Json | null;
+          ai_error: string | null;
+          ai_status: string;
           ai_summary: Json | null;
+          ai_updated_at: string | null;
           lesson_id: string;
           transcript: string | null;
           updated_at: string;
@@ -441,7 +544,10 @@ export type Database = {
         };
         Insert: {
           ai_checklist?: Json | null;
+          ai_error?: string | null;
+          ai_status?: string;
           ai_summary?: Json | null;
+          ai_updated_at?: string | null;
           lesson_id: string;
           transcript?: string | null;
           updated_at?: string;
@@ -450,7 +556,10 @@ export type Database = {
         };
         Update: {
           ai_checklist?: Json | null;
+          ai_error?: string | null;
+          ai_status?: string;
           ai_summary?: Json | null;
+          ai_updated_at?: string | null;
           lesson_id?: string;
           transcript?: string | null;
           updated_at?: string;
@@ -549,6 +658,41 @@ export type Database = {
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      lesson_transcript_segments: {
+        Row: {
+          end_seconds: number | null;
+          id: number;
+          lesson_id: string;
+          start_seconds: number;
+          text: string;
+          tsv: unknown;
+        };
+        Insert: {
+          end_seconds?: number | null;
+          id?: never;
+          lesson_id: string;
+          start_seconds: number;
+          text: string;
+          tsv?: never;
+        };
+        Update: {
+          end_seconds?: number | null;
+          id?: never;
+          lesson_id?: string;
+          start_seconds?: number;
+          text?: string;
+          tsv?: never;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "lesson_transcript_segments_lesson_id_fkey";
+            columns: ["lesson_id"];
+            isOneToOne: false;
+            referencedRelation: "lessons";
             referencedColumns: ["id"];
           },
         ];
@@ -916,6 +1060,17 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      search_lesson_segments: {
+        Args: { p_limit?: number; p_query: string };
+        Returns: {
+          course_title: string;
+          lesson_id: string;
+          lesson_title: string;
+          rank: number;
+          start_seconds: number;
+          text: string;
+        }[];
       };
       set_cohort_lessons: { Args: { p_cohort_id: string; p_items: Json }; Returns: undefined };
       set_lesson_completed: {

@@ -7,7 +7,7 @@ import { cn } from "@/components/ui/cn";
 type Tab = "aulas" | "caderno" | "ia";
 
 /** Painel lateral com 3 abas: Aulas · Caderno · Professor IA. */
-export function LessonSidebar({ lessons }: { lessons: ReactNode }) {
+export function LessonSidebar({ lessons, professor }: { lessons: ReactNode; professor?: ReactNode }) {
   const [tab, setTab] = useState<Tab>("aulas");
   const tabs: { id: Tab; label: ReactNode }[] = [
     { id: "aulas", label: "Aulas" },
@@ -46,6 +46,8 @@ export function LessonSidebar({ lessons }: { lessons: ReactNode }) {
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="min-h-0 flex-1 overflow-y-auto p-2">
         {tab === "aulas" ? (
           lessons
+        ) : tab === "ia" && professor ? (
+          professor
         ) : (
           <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
             <p className="font-display font-semibold">{tab === "caderno" ? "Caderno de anotações" : "Professor IA"}</p>

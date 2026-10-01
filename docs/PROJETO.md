@@ -318,3 +318,12 @@ Ainda abertas:
 - **E-mails:** enviados pelo próprio site via Resend (o plano grátis do Supabase não permite editar os modelos). Sem Resend, login e troca de senha usam o e-mail padrão do Supabase e o e-mail de boas-vindas da compra não sai.
 - **Webhooks de saída** (FunilPro etc.): `lead.created`, `purchase.approved`, `purchase.refunded`, assinados com `X-LC-Signature: sha256=<HMAC do corpo>`.
 - **Lead do curso grátis:** contas de aluno pagante ou admin nunca abrem só digitando o e-mail; pedem a senha.
+
+## 14. Notas de implementação (Etapa 2A)
+
+- **Etapa 2 dividida:** 2A (transcrição, resumo/checklist, Professor IA, busca), 2B (caderno, trailer, botão de oferta), 2C (Radar).
+- **Transcrição:** o admin envia a legenda da aula (.vtt/.srt, baixada do YouTube Studio ou do Bunny) ou cola o texto (com minutos `[12:30]` ou corrido). Fica em trechos de ~30 s com busca em português. A transcrição automática a partir do áudio (Whisper) não foi feita: legendas já existem no YouTube/Bunny e evitam baixar o vídeo.
+- **Modelo:** Claude Opus 5.5 (`claude-opus-5-5`) com `fallbacks: "default"` (se recusar por política, a API refaz no modelo indicado pela Anthropic). Resumo com esforço `medium`; Professor IA e busca com `low` (respostas rápidas).
+- **Professor IA:** uma conversa por aluno por aula, com a transcrição em cache (perguntas seguintes ficam mais baratas). Cita minutos `[mm:ss]` clicáveis.
+- **Limite:** 40 perguntas por aluno por dia (chat + busca), para controlar custo. Admin sem limite.
+- **Chave:** `ANTHROPIC_API_KEY` na Vercel. Sem ela, as telas mostram "em breve" e a busca mostra só os trechos encontrados.

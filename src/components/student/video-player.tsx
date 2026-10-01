@@ -13,6 +13,13 @@ type Props = {
 };
 
 const SAVE_EVERY_MS = 15_000;
+export const SEEK_EVENT = "lc:seek";
+
+/** Pede ao player da página para ir até um ponto do vídeo. */
+export function seekVideo(seconds: number) {
+  window.dispatchEvent(new CustomEvent(SEEK_EVENT, { detail: seconds }));
+  document.getElementById("lesson-player")?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
 const BUNNY_ORIGIN = "https://iframe.mediadelivery.net";
 
 type YTPlayer = { getCurrentTime(): number; getDuration(): number; seekTo(s: number, allow: boolean): void; destroy(): void };
@@ -87,6 +94,13 @@ export function VideoPlayer({ provider, src, lessonId, title, startAt, onEnded }
     document.addEventListener("visibilitychange", onHide);
 
     let cleanup = () => {};
+    // Outros componentes (resumo, Professor IA, caderno) pedem para pular para um minuto.
+    let seekTo: (seconds: number) => void = () => {};
+    const onSeek = (e: Event) => {
+      const seconds = (e as CustomEvent<number>).detail;
+      if (Number.isFinite(seconds)) seekTo(Math.max(0, seconds));
+    };
+    window.addEventListener(SEEK_EVENT, onSeek);
 
     if (provider === "bunny") {
       const post = (method: string, value?: unknown) =>
@@ -134,6 +148,10 @@ export function VideoPlayer({ provider, src, lessonId, title, startAt, onEnded }
       window.addEventListener("message", onMessage);
       iframe?.addEventListener("load", subscribe);
       subscribe();
+      seekTo = (seconds) => {
+        post("setCurrentTime", seconds);
+        post("play");
+      };
       cleanup = () => {
         window.removeEventListener("message", onMessage);
         iframe?.removeEventListener("load", subscribe);
@@ -144,6 +162,10 @@ export function VideoPlayer({ provider, src, lessonId, title, startAt, onEnded }
       let cancelled = false;
       void loadYouTubeApi().then((YT) => {
         if (cancelled) return;
+        seekTo = (seconds) => {
+          player?.seekTo(seconds, true);
+          (player as unknown as { playVideo?: () => void })?.playVideo?.();
+        };
         player = new YT.Player(iframeId, {
           events: {
             onReady: () => {
@@ -182,13 +204,14 @@ export function VideoPlayer({ provider, src, lessonId, title, startAt, onEnded }
 
     return () => {
       cleanup();
+      window.removeEventListener(SEEK_EVENT, onSeek);
       document.removeEventListener("visibilitychange", onHide);
       if (s.duration && s.position) saveProgress(lessonId, s.position, s.duration, true);
     };
   }, [provider, lessonId, startAt, iframeId]);
 
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-[var(--radius-card)] bg-black">
+    <div id="lesson-player" className="relative aspect-video w-full overflow-hidden rounded-[var(--radius-card)] bg-black">
       <iframe
         ref={iframeRef}
         id={iframeId}
