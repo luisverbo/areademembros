@@ -28,7 +28,10 @@ export async function sendMagicLink(_prev: FormState | undefined, formData: Form
     },
   });
 
-  // Mesma resposta exista ou não a conta (não revela quem é aluno).
+  // Mesma resposta exista ou não a conta (não revela quem é aluno), mas o motivo fica no log do servidor.
+  if (error) {
+    console.warn("signInWithOtp", { status: error.status, code: error.code, message: error.message });
+  }
   if (error && error.status !== 422 && error.code !== "otp_disabled" && error.code !== "signup_disabled") {
     if (error.status === 429) {
       return { ok: false, message: "Muitas tentativas. Aguarde um minuto e tente de novo." };
