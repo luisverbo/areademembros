@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { FormState } from "@/components/ui/form-message";
 import { requireAdmin } from "@/lib/auth";
+import { isPrivateHost } from "@/lib/private-host";
 import { dbErrorMessage, formFields, parseForm } from "@/lib/forms";
 import { deliver, OUTGOING_EVENTS } from "@/lib/outgoing-webhooks";
 import { createClient } from "@/lib/supabase/server";
@@ -25,8 +26,13 @@ export async function createOutgoingWebhook(_prev: FormState | undefined, formDa
     .filter((e) => EVENT_IDS.includes(e));
   if (!events.length) return { ok: false, errors: { events: ["Escolha pelo menos um evento."] } };
 
+  const target = new URL(parsed.data.url!);
+  if (target.protocol !== "https:") return { ok: false, errors: { url: ["Use um endereço https://."] } };
+  if (isPrivateHost(target.hostname))
+    return { ok: false, errors: { url: ["Esse endereço é interno; use o endereço público do seu funil."] } };
+
   const supabase = await createClient();
-  const { error } = await supabase.from("outgoing_webhooks").insert({ name: parsed.data.name, url: parsed.data.url!, events });
+  const { error } = await supabase.from("outgoing_webhooks").insert({ name: parsed.data.name, url: target.toString(), events });
   if (error) return { ok: false, message: dbErrorMessage(error) };
   revalidatePath("/admin/integracoes", "layout");
   return { ok: true, message: "Webhook criado. Copie o segredo para validar a assinatura no destino." };

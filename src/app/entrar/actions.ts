@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { sendAuthEmail } from "@/lib/auth-emails";
 import { env } from "@/lib/env";
+import { allowRequest, TOO_MANY } from "@/lib/rate-limit";
 import { safeNextPath } from "@/lib/safe-redirect";
 import { createClient } from "@/lib/supabase/server";
 import type { FormState } from "@/components/ui/form-message";
@@ -19,6 +20,7 @@ export async function sendMagicLink(_prev: FormState | undefined, formData: Form
     return { ok: false, errors: z.flattenError(parsed.error).fieldErrors };
   }
 
+  if (!(await allowRequest("entrar", 10, 15))) return { ok: false, message: TOO_MANY };
   const next = safeNextPath(parsed.data.next);
   const sentByUs = await sendAuthEmail(parsed.data.email, "login", next);
   if (sentByUs === "failed") {
@@ -98,6 +100,7 @@ export async function requestPasswordReset(_prev: FormState | undefined, formDat
     return { ok: false, errors: z.flattenError(parsed.error).fieldErrors };
   }
 
+  if (!(await allowRequest("senha", 10, 15))) return { ok: false, message: TOO_MANY };
   const sentByUs = await sendAuthEmail(parsed.data.email, "password");
   if (sentByUs === "failed") {
     return { ok: false, message: "Não foi possível enviar o link agora. Tente novamente em instantes." };

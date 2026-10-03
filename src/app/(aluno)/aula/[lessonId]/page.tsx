@@ -29,12 +29,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function LessonPage({ params, searchParams }: Props) {
-  const profile = await requireUser();
   const { lessonId } = await params;
   // ?t=754 (vindo da busca ou do caderno) começa o vídeo nesse segundo.
   const t = Number((await searchParams).t);
   const startOverride = Number.isFinite(t) && t >= 0 ? Math.floor(t) : null;
-  const course = await getCourseByLessonId(lessonId);
+  const [profile, course] = await Promise.all([requireUser(), getCourseByLessonId(lessonId)]);
   if (!course) notFound();
 
   const view = await getCourseView(course, profile);
@@ -80,20 +79,19 @@ export default async function LessonPage({ params, searchParams }: Props) {
   }
 
   const supabase = await createClient();
-  const [{ data: content }, { data: details }, { data: materials }, { data: comments }] = await Promise.all([
+  const [{ data: content }, { data: details }, { data: materials }, { data: comments }, { data: notes }] = await Promise.all([
     supabase.from("lesson_contents").select("video_provider, video_id, ai_summary, ai_checklist").eq("lesson_id", lessonId).maybeSingle(),
     supabase.from("lessons").select("description, is_published, offer_at_seconds, offer_label, offer_url").eq("id", lessonId).maybeSingle(),
     supabase.from("lesson_materials").select("id, name").eq("lesson_id", lessonId).order("position"),
     supabase.rpc("lesson_comments", { p_lesson_id: lessonId, p_cohort_id: view.cohort?.id }),
+    supabase
+      .from("notes")
+      .select("id, content, timestamp_seconds, updated_at")
+      .eq("user_id", profile.id)
+      .eq("lesson_id", lessonId)
+      .order("timestamp_seconds", { nullsFirst: true })
+      .order("created_at"),
   ]);
-
-  const { data: notes } = await supabase
-    .from("notes")
-    .select("id, content, timestamp_seconds, updated_at")
-    .eq("user_id", profile.id)
-    .eq("lesson_id", lessonId)
-    .order("timestamp_seconds", { nullsFirst: true })
-    .order("created_at");
   const embed = content ? embedFor(content.video_provider, content.video_id) : null;
   const summaryPoints = (
     (content?.ai_summary as { points?: { title: string; detail: string; start_seconds: number | null }[] } | null)?.points ?? []
@@ -139,7 +137,7 @@ export default async function LessonPage({ params, searchParams }: Props) {
             <div className="flex flex-col gap-1">
               <Link href={`/curso/${course.slug}`} className="text-fg-muted hover:text-fg w-fit text-sm">
                 {course.title}
-                {view.cohort ? <span className="text-accent"> · {view.cohort.name}</span> : null}
+                {view.cohort ? <span className="text-accent-soft"> · {view.cohort.name}</span> : null}
               </Link>
               <h1 className="text-2xl font-bold md:text-3xl">{lesson.title}</h1>
               <p className="text-fg-muted text-sm">

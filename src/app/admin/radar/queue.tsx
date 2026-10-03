@@ -32,7 +32,7 @@ function QueueItem({ comment }: { comment: RadarComment }) {
             {kindLabels[comment.kind]}
           </Badge>
         ) : null}
-        <Link href={`/admin/alunos/${comment.authorId}`} className="text-fg hover:text-accent font-semibold">
+        <Link href={`/admin/alunos/${comment.authorId}`} className="text-fg hover:text-accent-soft font-semibold">
           {comment.authorName}
         </Link>
         <span className="text-fg-muted">·</span>
@@ -57,7 +57,7 @@ function QueueItem({ comment }: { comment: RadarComment }) {
             placeholder="Sua resposta aparece embaixo do comentário, na aula."
             className="border-border bg-surface focus:border-fg-muted w-full rounded-lg border p-3 text-sm focus:outline-none"
           />
-          {state?.errors?.content ? <p className="text-accent text-sm">{state.errors.content[0]}</p> : null}
+          {state?.errors?.content ? <p className="text-accent-soft text-sm">{state.errors.content[0]}</p> : null}
           <FormMessage state={state} />
           <div className="flex gap-2">
             <SubmitButton size="sm" pendingText="Enviando…">

@@ -32,7 +32,7 @@ export function UnsubscribeForm({ token, initiallyOut }: { token: string; initia
   return (
     <div className="flex flex-col gap-4">
       <p className="text-fg-soft">Ao confirmar, você deixa de receber avisos e novidades por e-mail e WhatsApp.</p>
-      {error ? <p className="text-accent text-sm">Link inválido. Peça um novo no último e-mail que recebeu.</p> : null}
+      {error ? <p className="text-accent-soft text-sm">Link inválido. Peça um novo no último e-mail que recebeu.</p> : null}
       <Button disabled={pending} onClick={() => run(false)}>
         {pending ? "Salvando…" : "Não quero mais receber"}
       </Button>

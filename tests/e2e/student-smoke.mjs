@@ -79,11 +79,11 @@ const cohort = await must(
       name: "Mentoria T1",
       release_mode: "days_after_join",
       release_config: { interval_days: 7 },
-      live_url: "https://meet.google.com/abc",
     })
     .select("id")
     .single(),
 );
+await must(sb.from("cohort_live_links").insert({ cohort_id: cohort.id, live_url: "https://meet.google.com/abc" }));
 await must(
   sb.rpc("set_cohort_lessons", {
     p_cohort_id: cohort.id,

@@ -21,7 +21,7 @@ export function CompleteButton({ lessonId, completed }: { lessonId: string; comp
         })
       }
     >
-      <CheckIcon className={optimistic ? "text-accent" : "text-fg-muted"} />
+      <CheckIcon className={optimistic ? "text-accent-soft" : "text-fg-muted"} />
       {optimistic ? "Concluída" : "Marcar como concluída"}
     </Button>
   );

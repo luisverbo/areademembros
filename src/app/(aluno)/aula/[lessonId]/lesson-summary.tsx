@@ -46,7 +46,7 @@ export function LessonSummary({ lessonId, points, checklist }: { lessonId: strin
     <section className="border-border bg-surface grid gap-5 rounded-[var(--radius-card)] border p-5 md:grid-cols-[3fr_2fr]">
       <div className="flex flex-col gap-3">
         <h2 className="flex items-center gap-2 text-base font-semibold">
-          <SparkIcon className="text-accent" /> Resumo da aula
+          <SparkIcon className="text-accent-soft" /> Resumo da aula
         </h2>
         <ol className="flex flex-col gap-3">
           {points.map((p, i) => (
@@ -55,7 +55,7 @@ export function LessonSummary({ lessonId, points, checklist }: { lessonId: strin
                 <button
                   type="button"
                   onClick={() => seekVideo(p.start_seconds!)}
-                  className="bg-accent/15 text-accent hover:bg-accent/25 h-fit shrink-0 rounded-md px-1.5 py-0.5 font-semibold tabular-nums"
+                  className="bg-accent/15 text-accent-soft hover:bg-accent/25 h-fit shrink-0 rounded-md px-1.5 py-0.5 font-semibold tabular-nums"
                   aria-label={`Ir para ${formatTimestamp(p.start_seconds)}`}
                 >
                   {formatTimestamp(p.start_seconds)}

@@ -10,6 +10,7 @@ import { leadFieldsFor } from "@/lib/lead-fields";
 import { captureLead } from "@/lib/leads";
 import { dispatchEvent } from "@/lib/outgoing-webhooks";
 import { normalizeWhatsapp } from "@/lib/phone";
+import { allowRequest, TOO_MANY } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -44,6 +45,8 @@ export async function submitLead(slug: string, _prev: LeadFormState | undefined,
   if (!consent) errors.consent = ["Para liberar o acesso, aceite receber nossas mensagens."];
   if (Object.keys(errors).length) return { ok: false, errors };
 
+  if (!(await allowRequest("gratis", 10, 60))) return { ok: false, message: TOO_MANY };
+
   const utm = Object.fromEntries(UTM_KEYS.map((k) => [k, String(formData.get(k) ?? "").slice(0, 200)]).filter(([, v]) => v)) as Record<
     string,
     string
@@ -76,8 +79,9 @@ export async function submitLead(slug: string, _prev: LeadFormState | undefined,
     }),
   );
 
-  // Só WhatsApp não tem e-mail para confirmar: entra direto.
-  const direct = course.lead_access === "direct" || !fields.email;
+  // Entrada direta só para conta criada agora. Conta que já existia entra pelo link no e-mail:
+  // ninguém entra na conta de outra pessoa só digitando o e-mail (ou o WhatsApp) dela.
+  const direct = (course.lead_access === "direct" || !fields.email) && result.isNew;
   if (direct) {
     const admin = createAdminClient();
     const { data } = await admin.auth.admin.generateLink({ type: "magiclink", email: result.email });

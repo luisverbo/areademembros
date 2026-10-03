@@ -563,7 +563,7 @@ describe("leads e webhooks de saída (1C)", () => {
     const [c] = await q<{ lead_fields: string; lead_access: string }>("select lead_fields, lead_access from courses where id = $1", [
       courseId,
     ]);
-    expect(c).toEqual({ lead_fields: "name_email_whatsapp", lead_access: "direct" });
+    expect(c).toEqual({ lead_fields: "name_email_whatsapp", lead_access: "confirm_email" });
   });
 
   it("só admin vê leads e webhooks; segredo gerado sozinho", async () => {
@@ -885,5 +885,56 @@ describe("certificados, recomendação e desempenho (3B)", () => {
       ["C3 Aula 1", 1, 1],
       ["C3 Aula 2", 1, 1],
     ]);
+  });
+});
+
+describe("revisão de segurança (3C)", () => {
+  it("link da live: só quem está na turma (e admin) lê", async () => {
+    await q("insert into cohort_live_links (cohort_id, live_url) values ($1, 'https://meet.google.com/abc')", [cohortA]);
+    expect(await as(db, aliceId, () => q("select live_url from cohort_live_links"))).toHaveLength(1);
+    expect(await as(db, bobId, () => q("select live_url from cohort_live_links"))).toHaveLength(0);
+    expect(await as(db, null, () => q("select live_url from cohort_live_links").catch(() => []))).toHaveLength(0);
+    expect((await as(db, adminId, () => q("select live_url from cohort_live_links"))).length).toBeGreaterThan(0);
+    // Visitante não vê mais o link pela tabela de turmas (a coluna saiu)
+    const cols = await q<{ column_name: string }>(
+      "select column_name from information_schema.columns where table_name = 'cohorts' and column_name = 'live_url'",
+    );
+    expect(cols).toHaveLength(0);
+  });
+
+  it("aluno não altera o próprio aceite de mensagens pela API", async () => {
+    await as(db, aliceId, async () => {
+      await expect(db.query("update profiles set marketing_consent = false where id = $1", [aliceId])).rejects.toThrow(/permission denied/);
+    });
+    await as(db, aliceId, () => q("update profiles set full_name = 'Alice S.' where id = $1", [aliceId]));
+  });
+
+  it("limite por origem e reserva de webhook só pelo servidor", async () => {
+    await as(db, aliceId, async () => {
+      await expect(db.query("select claim_rate_limit('x', 1, '1 minute')")).rejects.toThrow(/permission denied/);
+    });
+    const hits = [];
+    for (let i = 0; i < 3; i++)
+      hits.push((await q<{ ok: boolean }>("select claim_rate_limit('gratis:abc', 2, interval '10 minutes') as ok"))[0].ok);
+    expect(hits).toEqual([true, true, false]);
+
+    await q(
+      "insert into webhook_events (provider, idempotency_key, event_type, payload, status) values ('kiwify', 'k1', 'x', '{}', 'processed')",
+    );
+    expect((await q<{ id: string | null }>("select claim_webhook_event('kiwify', 'k1') as id"))[0].id).toBeNull();
+    await q("update webhook_events set status = 'failed' where idempotency_key = 'k1'");
+    expect((await q<{ id: string | null }>("select claim_webhook_event('kiwify', 'k1') as id"))[0].id).not.toBeNull();
+    // Reservado há pouco: segunda reserva simultânea não leva
+    expect((await q<{ id: string | null }>("select claim_webhook_event('kiwify', 'k1') as id"))[0].id).toBeNull();
+  });
+
+  it("derrubar sessões: só servidor; apaga as sessões do usuário", async () => {
+    await q("insert into auth.sessions (user_id) values ($1), ($1), ($2)", [aliceId, bobId]);
+    await as(db, aliceId, async () => {
+      await expect(db.query("select revoke_user_sessions($1)", [aliceId])).rejects.toThrow(/permission denied/);
+    });
+    await q("select revoke_user_sessions($1)", [aliceId]);
+    expect(await q("select 1 from auth.sessions where user_id = $1", [aliceId])).toHaveLength(0);
+    expect(await q("select 1 from auth.sessions where user_id = $1", [bobId])).toHaveLength(1);
   });
 });

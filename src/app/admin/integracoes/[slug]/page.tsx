@@ -308,7 +308,7 @@ export default async function IntegrationPage({ params }: Props) {
                     <span className="text-fg-soft">
                       {hookName[d.webhook_id] ?? "—"} · {eventLabel[d.event] ?? d.event}
                     </span>
-                    <span className={d.error ? "text-accent text-xs" : "text-fg-muted text-xs"}>
+                    <span className={d.error ? "text-accent-soft text-xs" : "text-fg-muted text-xs"}>
                       {d.error ? d.error : `HTTP ${d.status_code}`} · {formatDateTime(d.created_at)}
                     </span>
                   </li>

@@ -66,7 +66,7 @@ export default async function StudentsPage({ searchParams }: PageProps<"/admin/a
 
       <details className="group border-border bg-surface mb-6 rounded-[var(--radius-card)] border">
         <summary className="cursor-pointer list-none px-5 py-3 text-sm font-semibold marker:hidden">
-          <span className="text-accent group-open:hidden">+ </span>Adicionar aluno manualmente
+          <span className="text-accent-soft group-open:hidden">+ </span>Adicionar aluno manualmente
         </summary>
         <div className="border-border border-t p-5">
           <NewStudentForm cohorts={cohortOptions} />
@@ -110,7 +110,7 @@ export default async function StudentsPage({ searchParams }: PageProps<"/admin/a
               {students.map((s) => (
                 <tr key={s.id} className="border-border hover:bg-surface-2 border-b last:border-0">
                   <td className="px-5 py-2.5">
-                    <Link href={`/admin/alunos/${s.id}`} className="hover:text-accent">
+                    <Link href={`/admin/alunos/${s.id}`} className="hover:text-accent-soft">
                       <span className="flex items-center gap-2">
                         {s.full_name || s.email}
                         {s.role === "admin" ? <Badge tone="accent">Admin</Badge> : null}

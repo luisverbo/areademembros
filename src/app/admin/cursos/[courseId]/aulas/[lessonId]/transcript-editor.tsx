@@ -126,7 +126,7 @@ export function TranscriptEditor(props: Props) {
             <span className="text-fg-muted text-xs">A IA está gerando o resumo…</span>
           ) : null}
         </div>
-        {props.status === "error" && props.error ? <p className="text-accent text-sm">{props.error}</p> : null}
+        {props.status === "error" && props.error ? <p className="text-accent-soft text-sm">{props.error}</p> : null}
         <FormMessage state={summaryState} />
       </form>
     </Card>

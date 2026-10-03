@@ -19,7 +19,7 @@ const modeHelp: Record<Mode, string> = {
   days_after_join: "Cada aluno tem o próprio calendário, contado a partir da entrada dele. Nunca libera antes do início da turma.",
 };
 
-export function CohortForm({ cohort }: { cohort: Tables<"cohorts"> }) {
+export function CohortForm({ cohort, liveUrl }: { cohort: Tables<"cohorts">; liveUrl: string | null }) {
   const [state, action] = useActionState(updateCohort.bind(null, cohort.id), undefined);
   const [mode, setMode] = useState<Mode>(cohort.release_mode);
   const [access, setAccess] = useState(cohort.access_months ? "months" : "lifetime");
@@ -47,7 +47,7 @@ export function CohortForm({ cohort }: { cohort: Tables<"cohorts"> }) {
             <Input id="ends_at" name="ends_at" type="datetime-local" defaultValue={isoToZonedInput(cohort.ends_at)} />
           </Field>
           <Field label="Link da live" htmlFor="live_url" error={e.live_url} className="md:col-span-2">
-            <Input id="live_url" name="live_url" type="url" defaultValue={cohort.live_url ?? ""} placeholder="https://meet.google.com/…" />
+            <Input id="live_url" name="live_url" type="url" defaultValue={liveUrl ?? ""} placeholder="https://meet.google.com/…" />
           </Field>
         </div>
       </Card>

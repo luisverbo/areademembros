@@ -12,6 +12,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
 
   return (
     <div className="min-h-dvh">
+      <a href="#conteudo" className="skip-link">
+        Pular para o conteúdo
+      </a>
       <header className="border-border bg-bg/95 sticky top-0 z-20 flex h-14 items-center justify-between border-b px-4 backdrop-blur md:px-6">
         <div className="flex items-center gap-3">
           <Brand href="/admin" />
@@ -30,7 +33,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
         <aside className="md:sticky md:top-20 md:h-fit md:w-48 md:shrink-0">
           <AdminNav />
         </aside>
-        <main className="min-w-0 flex-1">{children}</main>
+        <main id="conteudo" tabIndex={-1} className="min-w-0 flex-1 outline-none">
+          {children}
+        </main>
       </div>
     </div>
   );

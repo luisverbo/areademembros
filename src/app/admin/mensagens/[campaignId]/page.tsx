@@ -60,7 +60,7 @@ export default async function CampaignPage({ params }: PageProps<"/admin/mensage
             {(deliveries ?? []).map((d) => (
               <li key={d.id} className="flex flex-wrap items-center gap-2 py-2">
                 {d.user_id ? (
-                  <Link href={`/admin/alunos/${d.user_id}`} className="hover:text-accent font-semibold">
+                  <Link href={`/admin/alunos/${d.user_id}`} className="hover:text-accent-soft font-semibold">
                     {d.user?.full_name || d.to_address}
                   </Link>
                 ) : (

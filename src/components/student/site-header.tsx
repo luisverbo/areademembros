@@ -28,7 +28,7 @@ export function SiteHeader({ profile }: { profile: Profile }) {
           href="/busca"
           className="border-border text-fg-soft hover:border-fg-muted hover:text-fg flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors"
         >
-          <SearchIcon width={14} height={14} className="text-accent" />
+          <SearchIcon width={14} height={14} className="text-accent-soft" />
           <span className="hidden sm:inline">Buscar nas aulas</span>
           <span className="sm:hidden">Buscar</span>
         </Link>

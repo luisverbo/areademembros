@@ -29,3 +29,21 @@ export async function findOrCreateUser({ email, fullName, whatsapp, marketingCon
   }
   return data.user.id;
 }
+
+/**
+ * Primeiro acesso pago (compra ou matrícula manual) de uma conta: derruba as sessões abertas.
+ * Uma conta pode ter nascido num cadastro de curso grátis feito por terceiros; o aluno de verdade
+ * entra pelo e-mail de acesso. Chamar depois de matricular.
+ */
+export async function revokeSessionsOnFirstPaidAccess(userId: string): Promise<void> {
+  const admin = createAdminClient();
+  const { count } = await admin
+    .from("enrollments")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .in("origin", ["purchase", "manual"]);
+  if ((count ?? 0) <= 1) {
+    const { error } = await admin.rpc("revoke_user_sessions", { p_user_id: userId });
+    if (error) console.error("revoke_user_sessions", error.message);
+  }
+}

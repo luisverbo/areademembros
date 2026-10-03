@@ -17,7 +17,7 @@ function HitCard({ hit, n }: { hit: SearchHit; n?: number }) {
       href={`/aula/${hit.lessonId}?t=${hit.startSeconds}`}
       className="group border-border bg-surface hover:border-fg-muted flex gap-3 rounded-[var(--radius-card)] border p-4 transition-colors"
     >
-      <span className="bg-accent/15 text-accent h-fit shrink-0 rounded-md px-2 py-1 text-sm font-semibold tabular-nums">
+      <span className="bg-accent/15 text-accent-soft h-fit shrink-0 rounded-md px-2 py-1 text-sm font-semibold tabular-nums">
         {formatTimestamp(hit.startSeconds)}
       </span>
       <span className="min-w-0">
@@ -25,7 +25,7 @@ function HitCard({ hit, n }: { hit: SearchHit; n?: number }) {
           {n ? `[${n}] ` : ""}
           {hit.courseTitle}
         </span>
-        <span className="group-hover:text-accent block font-semibold">{hit.lessonTitle}</span>
+        <span className="group-hover:text-accent-soft block font-semibold">{hit.lessonTitle}</span>
         <span className="text-fg-muted mt-1 line-clamp-2 block text-sm">{hit.text}</span>
       </span>
     </Link>
@@ -70,7 +70,7 @@ export default async function SearchPage({ searchParams }: PageProps<"/busca">) 
     <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
       <div className="flex flex-col gap-2">
         <h1 className="flex items-center gap-2 text-2xl font-bold md:text-3xl">
-          <SearchIcon width={24} height={24} className="text-accent" /> Buscar nas aulas
+          <SearchIcon width={24} height={24} className="text-accent-soft" /> Buscar nas aulas
         </h1>
         <p className="text-fg-muted">Escreva o que você procura. Mostramos a aula e o minuto exato em que isso é falado.</p>
       </div>

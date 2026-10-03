@@ -41,8 +41,6 @@ export default async function CoursePage({ params }: PageProps<"/admin/cursos/[c
   ]);
   if (!course) notFound();
 
-  const allLessons = (modules ?? []).flatMap((m) => m.lessons.map((l) => ({ id: l.id, title: `${m.title} · ${l.title}` })));
-
   return (
     <>
       <PageHeader
@@ -58,7 +56,7 @@ export default async function CoursePage({ params }: PageProps<"/admin/cursos/[c
         }
       />
       <div className="flex flex-col gap-6">
-        <CourseForm siteUrl={env.siteUrl} course={course} cohorts={cohorts ?? []} lessons={allLessons} otherCourses={otherCourses ?? []} />
+        <CourseForm siteUrl={env.siteUrl} course={course} cohorts={cohorts ?? []} otherCourses={otherCourses ?? []} />
 
         <ModulesEditor courseId={course.id} modules={modules ?? []} />
 
@@ -76,7 +74,7 @@ export default async function CoursePage({ params }: PageProps<"/admin/cursos/[c
             <ul className="divide-border divide-y">
               {cohorts.map((c) => (
                 <li key={c.id}>
-                  <Link href={`/admin/turmas/${c.id}`} className="hover:text-accent flex items-center justify-between gap-3 py-2.5">
+                  <Link href={`/admin/turmas/${c.id}`} className="hover:text-accent-soft flex items-center justify-between gap-3 py-2.5">
                     <span className="font-medium">{c.name}</span>
                     <span className="text-fg-muted flex items-center gap-2 text-xs">
                       {releaseModeLabels[c.release_mode]} · {c.enrollments[0]?.count ?? 0} alunos

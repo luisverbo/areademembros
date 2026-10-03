@@ -6,7 +6,15 @@ import { LockedCourseCard } from "@/components/student/locked-course-card";
 import { Row } from "@/components/student/row";
 import { LinkButton } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
-import { courseProgress, getCourseView, getMyCourseViews, getPublishedCourses, getRecommendations, type CourseView } from "@/lib/catalog";
+import {
+  courseProgress,
+  getCourseView,
+  getMyCourseViews,
+  getLockedCourseViews,
+  getPublishedCourses,
+  getRecommendations,
+  type CourseView,
+} from "@/lib/catalog";
 
 export const metadata: Metadata = { title: "Início" };
 
@@ -31,7 +39,7 @@ export default async function HomePage() {
   // Ordem da fileira: recomendação (próximo curso definido no admin, depois "quem fez X também fez Y").
   const rank = new Map(recommended.map((r, i) => [r.course.id, i]));
   const others = all.filter((c) => !mineIds.has(c.id) && !c.is_free).sort((a, b) => (rank.get(a.id) ?? 999) - (rank.get(b.id) ?? 999));
-  const othersViews = await Promise.all(others.map((c) => getCourseView(c, profile)));
+  const othersViews = await getLockedCourseViews(others, profile);
 
   return (
     <main className="flex flex-col gap-10 pb-16">

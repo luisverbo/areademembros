@@ -73,7 +73,7 @@ export function NotebookView({ courses }: { courses: NotebookCourse[] }) {
                 <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
                   <div>
                     <p className="text-fg-muted text-xs">{lesson.moduleTitle}</p>
-                    <Link href={`/aula/${lesson.id}`} className="hover:text-accent font-semibold">
+                    <Link href={`/aula/${lesson.id}`} className="hover:text-accent-soft font-semibold">
                       {lesson.title}
                     </Link>
                   </div>
@@ -85,7 +85,7 @@ export function NotebookView({ courses }: { courses: NotebookCourse[] }) {
                       {note.timestamp_seconds !== null ? (
                         <Link
                           href={`/aula/${lesson.id}?t=${note.timestamp_seconds}`}
-                          className="bg-accent/15 text-accent hover:bg-accent/25 h-fit shrink-0 rounded-md px-1.5 py-0.5 font-semibold tabular-nums"
+                          className="bg-accent/15 text-accent-soft hover:bg-accent/25 h-fit shrink-0 rounded-md px-1.5 py-0.5 font-semibold tabular-nums"
                         >
                           {formatTimestamp(note.timestamp_seconds)}
                         </Link>

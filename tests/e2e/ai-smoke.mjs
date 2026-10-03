@@ -118,7 +118,8 @@ await step("aluno vê resumo com minutos e checklist que fica marcado", async ()
   await student.getByRole("button", { name: "Ir para 2:30" }).click();
   await student.getByLabel("Conectar o número").check();
   await student.reload();
-  assert(await student.getByLabel("Conectar o número").isChecked(), "checklist não ficou salvo");
+  // Depois do esqueleto de carregamento e da hidratação, o marcado volta do armazenamento do navegador.
+  await student.getByLabel("Conectar o número").and(student.locator(":checked")).waitFor({ timeout: 10000 });
   await student.screenshot({ caret: "initial", path: `${SHOTS}/d2-aula-resumo.png`, fullPage: true });
 });
 

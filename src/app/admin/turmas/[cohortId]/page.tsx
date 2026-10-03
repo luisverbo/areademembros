@@ -37,23 +37,25 @@ export default async function CohortPage({ params }: Props) {
     .maybeSingle();
   if (!cohort || !cohort.course) notFound();
 
-  const [{ data: modules }, { data: cohortLessons }, { data: preview }, { data: products }, { data: enrollments }] = await Promise.all([
-    supabase
-      .from("modules")
-      .select("title, lessons(id, title, is_published, position)")
-      .eq("course_id", cohort.course_id)
-      .order("position")
-      .order("position", { referencedTable: "lessons" }),
-    supabase.from("cohort_lessons").select("lesson_id, position, release_at, release_offset_days").eq("cohort_id", cohortId),
-    supabase.rpc("cohort_lessons_for_user", { p_cohort_id: cohortId, p_user_id: admin.id }),
-    supabase.from("cohort_products").select("*").eq("cohort_id", cohortId).order("created_at"),
-    supabase
-      .from("enrollments")
-      .select("id, status, origin, provider, started_at, expires_at, user:profiles!enrollments_user_id_fkey(id, full_name, email)")
-      .eq("cohort_id", cohortId)
-      .order("created_at", { ascending: false })
-      .limit(200),
-  ]);
+  const [{ data: modules }, { data: cohortLessons }, { data: preview }, { data: products }, { data: enrollments }, { data: live }] =
+    await Promise.all([
+      supabase
+        .from("modules")
+        .select("title, lessons(id, title, is_published, position)")
+        .eq("course_id", cohort.course_id)
+        .order("position")
+        .order("position", { referencedTable: "lessons" }),
+      supabase.from("cohort_lessons").select("lesson_id, position, release_at, release_offset_days").eq("cohort_id", cohortId),
+      supabase.rpc("cohort_lessons_for_user", { p_cohort_id: cohortId, p_user_id: admin.id }),
+      supabase.from("cohort_products").select("*").eq("cohort_id", cohortId).order("created_at"),
+      supabase
+        .from("enrollments")
+        .select("id, status, origin, provider, started_at, expires_at, user:profiles!enrollments_user_id_fkey(id, full_name, email)")
+        .eq("cohort_id", cohortId)
+        .order("created_at", { ascending: false })
+        .limit(200),
+      supabase.from("cohort_live_links").select("live_url").eq("cohort_id", cohortId).maybeSingle(),
+    ]);
 
   const courseLessons = (modules ?? []).flatMap((m) =>
     m.lessons.map((l) => ({ id: l.id, title: l.title, moduleTitle: m.title, isPublished: l.is_published })),
@@ -68,7 +70,7 @@ export default async function CohortPage({ params }: Props) {
         description={
           <>
             Curso:{" "}
-            <Link href={`/admin/cursos/${cohort.course.id}`} className="text-fg-soft hover:text-accent">
+            <Link href={`/admin/cursos/${cohort.course.id}`} className="text-fg-soft hover:text-accent-soft">
               {cohort.course.title}
             </Link>
           </>
@@ -86,7 +88,7 @@ export default async function CohortPage({ params }: Props) {
         }
       />
       <div className="flex flex-col gap-6">
-        <CohortForm cohort={cohort} />
+        <CohortForm cohort={cohort} liveUrl={live?.live_url ?? null} />
 
         <LessonsSchedule
           key={`${cohort.release_mode}-${cohort.updated_at}`}
@@ -152,7 +154,7 @@ export default async function CohortPage({ params }: Props) {
                     <tr key={e.id} className="border-border border-b">
                       <td className="px-5 py-2">
                         {e.user ? (
-                          <Link href={`/admin/alunos/${e.user.id}`} className="hover:text-accent">
+                          <Link href={`/admin/alunos/${e.user.id}`} className="hover:text-accent-soft">
                             <span className="block">{e.user.full_name || e.user.email}</span>
                             {e.user.full_name ? <span className="text-fg-muted block text-xs">{e.user.email}</span> : null}
                           </Link>

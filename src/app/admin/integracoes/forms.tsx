@@ -76,7 +76,7 @@ export function NewWebhookForm({ events }: { events: { id: string; label: string
           </label>
         ))}
       </fieldset>
-      {state?.errors?.events ? <p className="text-accent text-xs">{state.errors.events[0]}</p> : null}
+      {state?.errors?.events ? <p className="text-accent-soft text-xs">{state.errors.events[0]}</p> : null}
       <FormMessage state={state} />
       <div>
         <SubmitButton variant="secondary" pendingText="Criando…">

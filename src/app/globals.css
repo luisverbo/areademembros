@@ -12,6 +12,8 @@
   --color-fg-soft: #c9c9cf;
   --color-accent: #d63a42;
   --color-accent-hover: #c0333b;
+  /* Mesmo vermelho, um tom mais claro, para TEXTO pequeno (contraste AA sobre o grafite) */
+  --color-accent-soft: #ec5a63;
 
   --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
@@ -59,4 +61,33 @@ h4 {
     opacity: 1;
     transform: none;
   }
+}
+
+/* Sem animação para quem pediu menos movimento no sistema */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Atalho "Pular para o conteúdo" (só aparece ao focar pelo teclado) */
+.skip-link {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 600;
+  transform: translateY(-200%);
+}
+.skip-link:focus-visible {
+  transform: none;
 }

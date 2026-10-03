@@ -15,11 +15,10 @@ type Props = {
   siteUrl: string;
   course: Tables<"courses">;
   cohorts: { id: string; name: string }[];
-  lessons: { id: string; title: string }[];
   otherCourses: { id: string; title: string }[];
 };
 
-export function CourseForm({ siteUrl, course, cohorts, lessons, otherCourses }: Props) {
+export function CourseForm({ siteUrl, course, cohorts, otherCourses }: Props) {
   const [state, action] = useActionState(updateCourse.bind(null, course.id), undefined);
   const e = state?.errors ?? {};
   const [isFree, setIsFree] = useState(course.is_free);
@@ -140,17 +139,25 @@ export function CourseForm({ siteUrl, course, cohorts, lessons, otherCourses }: 
       </Card>
 
       <Card>
-        <CardHeader title="Prévia (trailer)" description="Trecho que toca sem som quando o aluno passa o mouse no curso bloqueado." />
-        <div className="grid gap-4 md:grid-cols-3">
-          <Field label="Aula" htmlFor="preview_lesson_id">
-            <Select id="preview_lesson_id" name="preview_lesson_id" defaultValue={course.preview_lesson_id ?? ""}>
+        <CardHeader
+          title="Prévia (trailer)"
+          description="Vídeo curto que toca sem som quando o aluno passa o mouse no curso bloqueado. Use um vídeo só para isso (não o de uma aula paga: o trailer fica visível para quem não comprou)."
+        />
+        <div className="grid gap-4 md:grid-cols-4">
+          <Field label="Onde está o vídeo" htmlFor="preview_video_provider" error={e.preview_video_provider}>
+            <Select id="preview_video_provider" name="preview_video_provider" defaultValue={course.preview_video_provider ?? ""}>
               <option value="">— Sem prévia —</option>
-              {lessons.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.title}
-                </option>
-              ))}
+              <option value="youtube">YouTube (não listado)</option>
+              <option value="bunny">Bunny Stream</option>
             </Select>
+          </Field>
+          <Field
+            label="ID do vídeo"
+            htmlFor="preview_video_id"
+            error={e.preview_video_id}
+            hint="YouTube: o código depois de v=. Bunny: o Video ID."
+          >
+            <Input id="preview_video_id" name="preview_video_id" defaultValue={course.preview_video_id ?? ""} placeholder="dQw4w9WgXcQ" />
           </Field>
           <Field label="Início" htmlFor="preview_start_seconds" error={e.preview_start_seconds} hint="min:seg">
             <Input

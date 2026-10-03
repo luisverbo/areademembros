@@ -38,7 +38,7 @@ export function CommentForm({ lessonId, cohortId, parentId, placeholder = "Escre
         aria-label={placeholder}
         autoFocus={autoFocus}
       />
-      {state?.errors?.content ? <p className="text-accent text-xs">{state.errors.content[0]}</p> : null}
+      {state?.errors?.content ? <p className="text-accent-soft text-xs">{state.errors.content[0]}</p> : null}
       <FormMessage state={state?.ok ? undefined : state} />
       <div>
         <SubmitButton size="sm" pendingText="Publicando…">

@@ -64,7 +64,10 @@ export function ModulesEditor({ courseId, modules }: { courseId: string; modules
                       </button>
                     </form>
                   </div>
-                  <Link href={`/admin/cursos/${courseId}/aulas/${lesson.id}`} className="hover:text-accent min-w-0 flex-1 truncate text-sm">
+                  <Link
+                    href={`/admin/cursos/${courseId}/aulas/${lesson.id}`}
+                    className="hover:text-accent-soft min-w-0 flex-1 truncate text-sm"
+                  >
                     {lesson.title}
                   </Link>
                   <div className="flex shrink-0 items-center gap-1.5">

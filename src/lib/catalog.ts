@@ -2,7 +2,6 @@ import "server-only";
 import { cache } from "react";
 import type { Profile } from "@/lib/auth";
 import type { Tables } from "@/lib/database.types";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { previewEmbed } from "@/lib/video-embed";
 
@@ -21,7 +20,8 @@ export type Course = Pick<
   | "showcase_order"
   | "sales_cohort_id"
   | "is_published"
-  | "preview_lesson_id"
+  | "preview_video_provider"
+  | "preview_video_id"
   | "preview_start_seconds"
   | "preview_end_seconds"
   | "certificate_enabled"
@@ -49,7 +49,7 @@ export type LessonItem = {
   lastAccessedAt: string | null;
 };
 
-export type Cohort = Pick<Tables<"cohorts">, "id" | "name" | "live_url" | "starts_at" | "ends_at">;
+export type Cohort = Pick<Tables<"cohorts">, "id" | "name" | "starts_at" | "ends_at"> & { live_url: string | null };
 
 export type CourseView = {
   course: Course;
@@ -62,7 +62,7 @@ export type CourseView = {
 };
 
 const COURSE_FIELDS =
-  "id, slug, title, description, cover_vertical_url, cover_horizontal_url, banner_url, is_free, showcase_order, sales_cohort_id, is_published, preview_lesson_id, preview_start_seconds, preview_end_seconds, certificate_enabled, next_course_id";
+  "id, slug, title, description, cover_vertical_url, cover_horizontal_url, banner_url, is_free, showcase_order, sales_cohort_id, is_published, preview_video_provider, preview_video_id, preview_start_seconds, preview_end_seconds, certificate_enabled, next_course_id";
 
 /** Cursos publicados da vitrine, na ordem definida no admin. */
 export const getPublishedCourses = cache(async (): Promise<Course[]> => {
@@ -82,13 +82,16 @@ const getActiveEnrollments = cache(async (userId: string): Promise<ActiveEnrollm
   const supabase = await createClient();
   const { data } = await supabase
     .from("enrollments")
-    .select("status, expires_at, cohort:cohorts(id, name, live_url, starts_at, ends_at, course_id)")
+    .select("status, expires_at, cohort:cohorts(id, name, starts_at, ends_at, course_id, live:cohort_live_links(live_url))")
     .eq("user_id", userId)
     .eq("status", "active");
   const now = Date.now();
   return (data ?? [])
     .filter((e) => e.cohort && (!e.expires_at || new Date(e.expires_at).getTime() > now))
-    .map((e) => ({ cohort: e.cohort! }));
+    .map((e) => {
+      const { live, ...cohort } = e.cohort!;
+      return { cohort: { ...cohort, live_url: live?.live_url ?? null } };
+    });
 });
 
 /** Link do checkout da turma de venda, com nome e e-mail do aluno já preenchidos. */
@@ -111,20 +114,15 @@ export function withBuyerData(checkoutUrl: string | null, profile: Pick<Profile,
   }
 }
 
-/**
- * Prévia (trailer) do curso bloqueado: o aluno ainda não tem acesso à aula, então o ID do vídeo
- * é lido com a service role só para montar o player sem som no trecho definido no admin.
- */
-async function previewSrcFor(course: Course): Promise<string | null> {
-  if (!course.preview_lesson_id) return null;
-  const admin = createAdminClient();
-  const { data } = await admin
-    .from("lesson_contents")
-    .select("video_provider, video_id")
-    .eq("lesson_id", course.preview_lesson_id)
-    .maybeSingle();
-  if (!data?.video_id) return null;
-  return previewEmbed(data.video_provider, data.video_id, course.preview_start_seconds ?? 0, course.preview_end_seconds);
+/** Prévia (trailer) do curso bloqueado: vídeo próprio do trailer, sem som, no trecho definido no admin. */
+function previewSrcFor(course: Course): string | null {
+  if (!course.preview_video_provider || !course.preview_video_id) return null;
+  return previewEmbed(
+    course.preview_video_provider,
+    course.preview_video_id,
+    course.preview_start_seconds ?? 0,
+    course.preview_end_seconds,
+  );
 }
 
 /** Monta a visão de um curso para o usuário: acesso, turma, aulas (com liberação) e progresso. */
@@ -203,7 +201,7 @@ export async function getCourseView(course: Course, profile: Profile): Promise<C
     cohort: enrollment ? enrollment.cohort : null,
     lessons,
     checkoutUrl: access === "locked" ? await checkoutUrlFor(supabase, course, profile) : null,
-    previewSrc: access === "locked" ? await previewSrcFor(course) : null,
+    previewSrc: access === "locked" ? previewSrcFor(course) : null,
   };
 }
 
@@ -260,4 +258,27 @@ export async function getRecommendations(limit = 12): Promise<Recommendation[]> 
     const course = byId.get(r.course_id);
     return course ? [{ course, reason: r.reason as Recommendation["reason"] }] : [];
   });
+}
+
+/**
+ * Visão leve dos cursos que o aluno NÃO tem (vitrine): só o que o card precisa (checkout e prévia),
+ * numa consulta para todos os cursos, em vez de quatro por curso. Admin vê a visão completa.
+ */
+export async function getLockedCourseViews(courses: Course[], profile: Profile): Promise<CourseView[]> {
+  if (!courses.length) return [];
+  if (profile.role === "admin") return Promise.all(courses.map((c) => getCourseView(c, profile)));
+
+  const supabase = await createClient();
+  const cohortIds = courses.flatMap((c) => (c.sales_cohort_id ? [c.sales_cohort_id] : []));
+  const { data: cohorts } = cohortIds.length ? await supabase.from("cohorts").select("id, checkout_url").in("id", cohortIds) : { data: [] };
+  const checkoutById = new Map((cohorts ?? []).map((c) => [c.id, c.checkout_url]));
+
+  return courses.map((course) => ({
+    course,
+    access: "locked",
+    cohort: null,
+    lessons: [],
+    checkoutUrl: course.sales_cohort_id ? withBuyerData(checkoutById.get(course.sales_cohort_id) ?? null, profile) : null,
+    previewSrc: previewSrcFor(course),
+  }));
 }

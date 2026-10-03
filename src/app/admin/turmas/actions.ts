@@ -82,7 +82,7 @@ export async function updateCohort(cohortId: string, _prev: FormState | undefine
   await requireAdmin();
   const parsed = parseForm(updateSchema, formData);
   if (!parsed.success) return parsed.state;
-  const { weekday, time, interval_days, access, access_months, access_starts_from, ...d } = parsed.data;
+  const { weekday, time, interval_days, access, access_months, access_starts_from, live_url, ...d } = parsed.data;
 
   let release_config: Record<string, string | number> = {};
   if (d.release_mode === "weekly") {
@@ -108,6 +108,12 @@ export async function updateCohort(cohortId: string, _prev: FormState | undefine
     .update({ ...d, release_config, access_months: access === "months" ? access_months : null, access_starts_from })
     .eq("id", cohortId);
   if (error) return { ok: false, message: dbErrorMessage(error) };
+  // Link da live fica numa tabela só para quem está na turma (e admin).
+  if (live_url && !live_url.startsWith("https://")) return { ok: false, errors: { live_url: ["Use um link https://."] } };
+  const { error: liveError } = await supabase
+    .from("cohort_live_links")
+    .upsert({ cohort_id: cohortId, live_url: live_url ?? null, updated_at: new Date().toISOString() });
+  if (liveError) return { ok: false, message: dbErrorMessage(liveError) };
 
   revalidatePath(`/admin/turmas/${cohortId}`);
   revalidatePath("/admin/turmas");

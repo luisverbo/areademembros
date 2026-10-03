@@ -81,7 +81,13 @@ const sales = await must(
 await must(
   sb
     .from("courses")
-    .update({ sales_cohort_id: sales.id, preview_lesson_id: llesson.id, preview_start_seconds: 10, preview_end_seconds: 40 })
+    .update({
+      sales_cohort_id: sales.id,
+      preview_video_provider: "youtube",
+      preview_video_id: "dQw4w9WgXcQ",
+      preview_start_seconds: 10,
+      preview_end_seconds: 40,
+    })
     .eq("id", locked.id),
 );
 

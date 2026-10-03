@@ -64,7 +64,7 @@ export function AutomationForm({ automation, info, sentLast30 }: Props) {
         <Checkbox name="channels" value="email" label="E-mail" defaultChecked={automation.channels.includes("email")} />
         <Checkbox name="channels" value="whatsapp" label="WhatsApp" defaultChecked={automation.channels.includes("whatsapp")} />
       </div>
-      {state?.errors?.channels ? <p className="text-accent text-xs">{state.errors.channels[0]}</p> : null}
+      {state?.errors?.channels ? <p className="text-accent-soft text-xs">{state.errors.channels[0]}</p> : null}
 
       <div className="grid gap-3 md:grid-cols-3">
         {usesDays ? (

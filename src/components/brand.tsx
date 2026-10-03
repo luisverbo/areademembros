@@ -9,7 +9,7 @@ export function Brand({ href = "/" }: { href?: string }) {
       {first}
       {rest.length ? (
         <>
-          <span className="text-accent">.</span>
+          <span className="text-accent-soft">.</span>
           {rest.join(".")}
         </>
       ) : null}

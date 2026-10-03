@@ -374,3 +374,26 @@ Ainda abertas:
 - **Desempenho** (Admin → Desempenho): vendas e leads grátis em 30 dias, conversão grátis → compra, reembolsos, vendas e leads por semana (8 semanas), abandono por aula por turma (com a maior queda destacada) e comparação entre turmas (alunos ativos, progresso médio, concluíram, parados 7+ dias).
 - **Sem IA:** "Gerar capa com IA" segue fora (decisão de 03/10/2026).
 - **Banco:** `supabase/setup/09-atualizacao-etapa-3b.sql`.
+
+## 19. Notas de implementação (Etapa 3C — revisão e polimento)
+
+### Segurança (revisão completa do código e do banco, com correções)
+- **Curso grátis, entrada direta:** quem digitava o e-mail (ou o WhatsApp) de uma conta já existente entrava nela. Agora a entrada direta só vale para conta criada na hora; conta que já existe recebe o link por e-mail. O formulário público também não altera mais nome, WhatsApp nem aceite de uma conta existente. O padrão dos cursos novos passou a ser "pelo link no e-mail".
+- **Primeiro acesso pago:** quando uma compra (ou matrícula manual) chega para uma conta que ainda não tinha acesso pago, todas as sessões abertas dela são derrubadas; o aluno entra pelo e-mail de acesso. Protege contra contas pré-criadas por terceiros.
+- **Link da live** saiu da tabela de turmas (qualquer visitante lia) para uma tabela só de quem está na turma.
+- **Prévia (trailer)** agora é um vídeo próprio (YouTube não listado ou Bunny), não mais uma aula paga: a prévia fica visível para quem não comprou.
+- **Limite por origem** (IP) nos formulários públicos: cadastro grátis (10/hora), link de acesso e senha (10 a cada 15 min), além do limite por e-mail que já existia.
+- **Webhooks de pagamento:** reserva atômica do evento (duas entregas simultâneas não processam duas vezes).
+- **Webhooks de saída:** só `https://` e nunca endereços internos.
+- **Aluno não altera o aceite de mensagens pela API** (só pela tela "Minha conta"); função interna de liberação não é mais chamável pelo aluno; log do WhatsApp sem a URL (que leva o token).
+- **Cabeçalhos de segurança** em todas as respostas (sem embutir o site em outros, nosniff, HSTS, Referrer-Policy, Permissions-Policy).
+- **Verificar no Supabase de produção** (não é código): Authentication → Sign In / Providers → *Allow new users to sign up* **desligado** (sem isso, qualquer pessoa cria conta com o e-mail de outra pelo endereço público da API) e, em Authentication → Settings, *Secure password change* ligado.
+- Fica como decisão de produto: o aluno pode "marcar como concluída" sem assistir; o certificado se baseia nisso.
+
+### Acessibilidade e polimento
+- Varredura automática (axe, WCAG 2.1 AA) em 24 telas, sem violações. Vermelho da marca ganhou um tom mais claro só para texto pequeno (contraste AA); botões continuam com o vermelho original.
+- Atalho "Pular para o conteúdo", foco visível, ícones ocultos de leitores de tela, menos movimento para quem pede no sistema, telas de carregamento e de erro.
+
+### Desempenho
+- Vitrine: cursos bloqueados usam uma consulta para todos (antes, quatro por curso). Página da aula: consultas em paralelo; registro de "último acesso" fora do caminho da resposta.
+- **Banco:** `supabase/setup/10-atualizacao-etapa-3c.sql`.

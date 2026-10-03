@@ -24,6 +24,12 @@ create table if not exists auth.users (
   created_at timestamptz default now()
 );
 
+create table if not exists auth.sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null,
+  created_at timestamptz default now()
+);
+
 create or replace function auth.uid()
 returns uuid
 language sql

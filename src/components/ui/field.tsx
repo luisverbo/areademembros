@@ -43,7 +43,7 @@ export function Field({ label, htmlFor, hint, error, children, className }: Fiel
         {label}
       </label>
       {children}
-      {message ? <p className="text-accent text-xs">{message}</p> : hint ? <p className="text-fg-muted text-xs">{hint}</p> : null}
+      {message ? <p className="text-accent-soft text-xs">{message}</p> : hint ? <p className="text-fg-muted text-xs">{hint}</p> : null}
     </div>
   );
 }

@@ -161,7 +161,7 @@ export default async function StudentPage({ params }: Props) {
               <div key={e.id} className="border-border bg-surface-2 rounded-lg border p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <Link href={`/admin/turmas/${e.cohort_id}`} className="hover:text-accent font-semibold">
+                    <Link href={`/admin/turmas/${e.cohort_id}`} className="hover:text-accent-soft font-semibold">
                       {e.cohort?.course?.title} · {e.cohort?.name}
                     </Link>
                     <p className="text-fg-muted text-xs">

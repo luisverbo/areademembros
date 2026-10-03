@@ -71,7 +71,7 @@ export function Materials({ lessonId, courseId, materials }: { lessonId: string;
           e.target.value = "";
         }}
       />
-      {message ? <p className="text-accent mb-3 text-sm">{message}</p> : null}
+      {message ? <p className="text-accent-soft mb-3 text-sm">{message}</p> : null}
       {materials.length ? (
         <ul className="divide-border divide-y">
           {materials.map((m) => (
@@ -82,7 +82,7 @@ export function Materials({ lessonId, courseId, materials }: { lessonId: string;
                 <button
                   type="button"
                   disabled={pending}
-                  className="hover:text-accent"
+                  className="hover:text-accent-soft"
                   onClick={() => {
                     if (window.confirm(`Excluir “${m.name}”?`)) startTransition(() => deleteMaterial(m.id, lessonId, courseId));
                   }}

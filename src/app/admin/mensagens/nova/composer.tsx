@@ -135,7 +135,7 @@ export function Composer({ courses, cohorts, ready }: Props) {
           <Button type="button" variant="secondary" size="sm" disabled={checking} onClick={refresh}>
             {checking ? "Contando…" : "Ver quantos vão receber"}
           </Button>
-          {preview && "error" in preview ? <p className="text-accent text-sm">{preview.error}</p> : null}
+          {preview && "error" in preview ? <p className="text-accent-soft text-sm">{preview.error}</p> : null}
           {preview && "total" in preview ? (
             <p className="text-fg-soft text-sm" role="status">
               <b className="text-fg">{preview.total}</b> pessoa{preview.total === 1 ? "" : "s"}

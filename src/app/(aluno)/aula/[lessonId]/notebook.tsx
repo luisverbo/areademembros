@@ -54,7 +54,7 @@ function NoteEditor({ note, onDelete, autoFocus }: { note: NoteDTO; onDelete: ()
           <button
             type="button"
             onClick={() => seekVideo(note.timestamp_seconds!)}
-            className="bg-accent/15 text-accent hover:bg-accent/25 rounded px-1.5 py-0.5 font-semibold tabular-nums"
+            className="bg-accent/15 text-accent-soft hover:bg-accent/25 rounded px-1.5 py-0.5 font-semibold tabular-nums"
             aria-label={`Ir para ${formatTimestamp(note.timestamp_seconds)}`}
           >
             {formatTimestamp(note.timestamp_seconds)}
@@ -68,7 +68,7 @@ function NoteEditor({ note, onDelete, autoFocus }: { note: NoteDTO; onDelete: ()
           </span>
           <button
             type="button"
-            className="hover:text-accent"
+            className="hover:text-accent-soft"
             onClick={() => {
               if (window.confirm("Excluir esta nota?")) onDelete();
             }}

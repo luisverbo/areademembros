@@ -67,7 +67,7 @@ function Comment({
         <p className="text-sm">
           <span className="font-semibold">{c.author.name}</span>
           {c.author.isAdmin ? (
-            <span className="bg-accent/15 text-accent ml-1.5 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase">Professor</span>
+            <span className="bg-accent/15 text-accent-soft ml-1.5 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase">Professor</span>
           ) : null}
           <span className="text-fg-muted ml-2 text-xs">
             <time dateTime={c.createdAt}>{timeAgo(c.createdAt)}</time>
@@ -83,7 +83,7 @@ function Comment({
           {c.author.id === myId ? (
             <button
               type="button"
-              className="hover:text-accent"
+              className="hover:text-accent-soft"
               onClick={() => {
                 if (window.confirm("Excluir este comentário?")) void deleteComment(c.id, lessonId);
               }}

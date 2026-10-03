@@ -54,7 +54,7 @@ export function IntegrationCard({
       </div>
       <div className="text-fg-muted flex items-center justify-between text-xs">
         <span>{footer}</span>
-        <span className="text-fg-soft group-hover:text-accent font-semibold transition-colors">Configurar →</span>
+        <span className="text-fg-soft group-hover:text-accent-soft font-semibold transition-colors">Configurar →</span>
       </div>
     </Link>
   );

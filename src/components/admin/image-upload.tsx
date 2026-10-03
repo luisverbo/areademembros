@@ -97,7 +97,7 @@ export function ImageUpload({ name, label, folder, defaultUrl, aspect, hint, cla
         }}
       />
       <div className="flex items-center justify-between gap-2 text-xs">
-        <span className={status.warn ? "text-accent" : "text-fg-muted"}>{status.message ?? hint}</span>
+        <span className={status.warn ? "text-accent-soft" : "text-fg-muted"}>{status.message ?? hint}</span>
         {url && !status.busy ? (
           <button type="button" className="text-fg-muted hover:text-fg" onClick={() => setUrl("")}>
             Remover

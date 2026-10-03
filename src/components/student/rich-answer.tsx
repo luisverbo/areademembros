@@ -19,7 +19,7 @@ function inline(text: string, onSeek?: (seconds: number) => void): ReactNode[] {
           key={m.index}
           type="button"
           onClick={() => (onSeek ?? seekVideo)(seconds)}
-          className="bg-accent/15 text-accent hover:bg-accent/25 mx-0.5 rounded px-1 font-semibold tabular-nums"
+          className="bg-accent/15 text-accent-soft hover:bg-accent/25 mx-0.5 rounded px-1 font-semibold tabular-nums"
           aria-label={`Ir para ${formatTimestamp(seconds)}`}
         >
           {m[1]}

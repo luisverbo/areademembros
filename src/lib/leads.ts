@@ -1,5 +1,4 @@
 import "server-only";
-import type { TablesUpdate } from "@/lib/database.types";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { findOrCreateUser } from "@/lib/users";
 
@@ -33,11 +32,7 @@ export async function captureLead(input: LeadInput): Promise<LeadResult> {
   }
   if (!email) throw new Error("lead sem e-mail nem WhatsApp");
 
-  const { data: existing } = await admin
-    .from("profiles")
-    .select("id, role, full_name, whatsapp, marketing_consent")
-    .eq("email", email)
-    .maybeSingle();
+  const { data: existing } = await admin.from("profiles").select("id, role").eq("email", email).maybeSingle();
 
   if (existing) {
     const { count } = await admin
@@ -46,15 +41,7 @@ export async function captureLead(input: LeadInput): Promise<LeadResult> {
       .eq("user_id", existing.id)
       .in("origin", ["purchase", "manual"]);
     if (existing.role === "admin" || (count ?? 0) > 0) return { status: "needs_login", email };
-
-    const patch: TablesUpdate<"profiles"> = {};
-    if (input.name && !existing.full_name) patch.full_name = input.name;
-    if (input.whatsapp && existing.whatsapp !== input.whatsapp) patch.whatsapp = input.whatsapp;
-    if (input.consent && !existing.marketing_consent) {
-      patch.marketing_consent = true;
-      patch.marketing_consent_at = new Date().toISOString();
-    }
-    if (Object.keys(patch).length) await admin.from("profiles").update(patch).eq("id", existing.id);
+    // Conta já existe: nada no perfil muda por um formulário público (quem digitou pode não ser o dono).
   }
 
   const userId =

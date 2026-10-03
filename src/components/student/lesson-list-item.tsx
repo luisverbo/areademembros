@@ -30,7 +30,7 @@ export function LessonListItem({
             <LockIcon />
           </span>
         ) : current ? (
-          <span className="bg-bg/60 text-accent absolute inset-0 flex items-center justify-center rounded-lg">
+          <span className="bg-bg/60 text-accent-soft absolute inset-0 flex items-center justify-center rounded-lg">
             <PlayIcon width={18} height={18} />
           </span>
         ) : null}
@@ -61,7 +61,7 @@ export function LessonListItem({
                   <CheckIcon width={12} height={12} /> Concluída
                 </span>
               ) : null}
-              {current ? <span className="text-accent font-semibold">Assistindo</span> : null}
+              {current ? <span className="text-accent-soft font-semibold">Assistindo</span> : null}
             </>
           )}
         </p>

@@ -222,6 +222,20 @@ await step("Curso grátis: cadastro rápido entra direto e vira lead", async () 
   assert(leads.length === 1 && leads[0].utm.utm_source === "instagram", JSON.stringify(leads));
 });
 
+await step("Curso grátis: conta que já existe não entra direto (vai pelo link no e-mail)", async () => {
+  const page = await (await browser.newContext()).newPage();
+  await page.goto(`${BASE}/gratis/e2e-free`);
+  await page.fill("#name", "Outra Pessoa");
+  await page.fill("#email", "e2e-wh-lia@lc.test");
+  await page.fill("#whatsapp", "(11) 90000-0000");
+  await page.check('input[name="consent"]');
+  await page.getByRole("button", { name: "Assistir agora" }).click();
+  await page.getByText(/Enviamos o link de acesso/).waitFor();
+  assert(!page.url().includes("/curso/"), "entrou na conta da Lia só digitando o e-mail");
+  const p = await must(sb.from("profiles").select("full_name, whatsapp").eq("email", "e2e-wh-lia@lc.test").single());
+  assert(p.full_name === "Lia Lead" && p.whatsapp === "+5511977776666", `perfil da Lia foi alterado: ${JSON.stringify(p)}`);
+});
+
 await step("Curso grátis: e-mail de aluno pagante exige senha", async () => {
   const page = await (await browser.newContext()).newPage();
   await page.goto(`${BASE}/gratis/e2e-free`);

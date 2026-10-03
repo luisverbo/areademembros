@@ -19,7 +19,7 @@ export default async function VerifyCertificatePage({ params }: PageProps<"/cert
         <Brand />
         {data ? (
           <>
-            <p className="bg-accent/15 text-accent mt-6 inline-flex rounded-md px-2 py-1 text-xs font-bold tracking-wide uppercase">
+            <p className="bg-accent/15 text-accent-soft mt-6 inline-flex rounded-md px-2 py-1 text-xs font-bold tracking-wide uppercase">
               Certificado válido
             </p>
             <h1 className="mt-3 text-2xl font-bold">{data.student_name}</h1>

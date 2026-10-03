@@ -17,9 +17,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CoursePage({ params }: Props) {
-  const profile = await requireUser();
   const { slug } = await params;
-  const course = await getCourseBySlug(slug);
+  const [profile, course] = await Promise.all([requireUser(), getCourseBySlug(slug)]);
   if (!course) notFound();
 
   const view = await getCourseView(course, profile);

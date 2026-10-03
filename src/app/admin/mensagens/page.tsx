@@ -102,7 +102,7 @@ export default async function MessagesPage() {
                     return (
                       <tr key={c.id}>
                         <td className="py-2 pr-3">
-                          <Link href={`/admin/mensagens/${c.id}`} className="hover:text-accent font-semibold">
+                          <Link href={`/admin/mensagens/${c.id}`} className="hover:text-accent-soft font-semibold">
                             {c.name}
                           </Link>{" "}
                           <Badge tone="muted">{purposeLabels[c.purpose as "notice" | "promo"]}</Badge>

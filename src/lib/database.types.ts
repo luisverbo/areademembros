@@ -258,6 +258,32 @@ export type Database = {
           },
         ];
       };
+      cohort_live_links: {
+        Row: {
+          cohort_id: string;
+          live_url: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          cohort_id: string;
+          live_url?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          cohort_id?: string;
+          live_url?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "cohort_live_links_cohort_id_fkey";
+            columns: ["cohort_id"];
+            isOneToOne: true;
+            referencedRelation: "cohorts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       cohort_products: {
         Row: {
           cohort_id: string;
@@ -304,7 +330,6 @@ export type Database = {
           ends_at: string | null;
           id: string;
           is_active: boolean;
-          live_url: string | null;
           name: string;
           release_config: NonNullable<Json>;
           release_mode: Database["public"]["Enums"]["release_mode"];
@@ -321,7 +346,6 @@ export type Database = {
           ends_at?: string | null;
           id?: string;
           is_active?: boolean;
-          live_url?: string | null;
           name: string;
           release_config?: NonNullable<Json>;
           release_mode?: Database["public"]["Enums"]["release_mode"];
@@ -338,7 +362,6 @@ export type Database = {
           ends_at?: string | null;
           id?: string;
           is_active?: boolean;
-          live_url?: string | null;
           name?: string;
           release_config?: NonNullable<Json>;
           release_mode?: Database["public"]["Enums"]["release_mode"];
@@ -448,8 +471,9 @@ export type Database = {
           lead_fields: Database["public"]["Enums"]["lead_fields"];
           next_course_id: string | null;
           preview_end_seconds: number | null;
-          preview_lesson_id: string | null;
           preview_start_seconds: number | null;
+          preview_video_id: string | null;
+          preview_video_provider: Database["public"]["Enums"]["video_provider"] | null;
           sales_cohort_id: string | null;
           showcase_order: number;
           slug: string;
@@ -471,8 +495,9 @@ export type Database = {
           lead_fields?: Database["public"]["Enums"]["lead_fields"];
           next_course_id?: string | null;
           preview_end_seconds?: number | null;
-          preview_lesson_id?: string | null;
           preview_start_seconds?: number | null;
+          preview_video_id?: string | null;
+          preview_video_provider?: Database["public"]["Enums"]["video_provider"] | null;
           sales_cohort_id?: string | null;
           showcase_order?: number;
           slug: string;
@@ -494,8 +519,9 @@ export type Database = {
           lead_fields?: Database["public"]["Enums"]["lead_fields"];
           next_course_id?: string | null;
           preview_end_seconds?: number | null;
-          preview_lesson_id?: string | null;
           preview_start_seconds?: number | null;
+          preview_video_id?: string | null;
+          preview_video_provider?: Database["public"]["Enums"]["video_provider"] | null;
           sales_cohort_id?: string | null;
           showcase_order?: number;
           slug?: string;
@@ -508,13 +534,6 @@ export type Database = {
             columns: ["next_course_id"];
             isOneToOne: false;
             referencedRelation: "courses";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "courses_preview_lesson_fk";
-            columns: ["preview_lesson_id"];
-            isOneToOne: false;
-            referencedRelation: "lessons";
             referencedColumns: ["id"];
           },
           {
@@ -1176,6 +1195,21 @@ export type Database = {
         };
         Relationships: [];
       };
+      rate_limits: {
+        Row: {
+          hit_at: string;
+          key: string;
+        };
+        Insert: {
+          hit_at?: string;
+          key: string;
+        };
+        Update: {
+          hit_at?: string;
+          key?: string;
+        };
+        Relationships: [];
+      };
       webhook_deliveries: {
         Row: {
           created_at: string;
@@ -1294,6 +1328,8 @@ export type Database = {
       };
       can_access_lesson: { Args: { p_lesson_id: string }; Returns: boolean };
       claim_auth_email: { Args: { p_email: string; p_kind: string }; Returns: boolean };
+      claim_rate_limit: { Args: { p_key: string; p_max: number; p_window: string }; Returns: boolean };
+      claim_webhook_event: { Args: { p_key: string; p_provider: Database["public"]["Enums"]["payment_provider"] }; Returns: string };
       cohort_lesson_funnel: {
         Args: { p_cohort_id: string };
         Returns: {
@@ -1421,6 +1457,7 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      revoke_user_sessions: { Args: { p_user_id: string }; Returns: undefined };
       search_lesson_segments: {
         Args: { p_limit?: number; p_query: string };
         Returns: {

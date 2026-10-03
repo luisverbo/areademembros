@@ -46,7 +46,7 @@ export function LeadForm({ slug, mode, direct, utm }: Props) {
           required
           label="Aceito receber mensagens por e-mail e WhatsApp sobre este e outros conteúdos. Posso cancelar quando quiser."
         />
-        {e.consent ? <p className="text-accent text-xs">{e.consent[0]}</p> : null}
+        {e.consent ? <p className="text-accent-soft text-xs">{e.consent[0]}</p> : null}
       </div>
       <SubmitButton size="lg" pendingText="Liberando…">
         {direct ? "Assistir agora" : "Receber acesso no e-mail"}

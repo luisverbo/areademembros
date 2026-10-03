@@ -4,7 +4,7 @@ import { accessEmail, sendEmail } from "@/lib/email";
 import { dispatchEvent } from "@/lib/outgoing-webhooks";
 import { normalizeWhatsapp } from "@/lib/phone";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { findOrCreateUser } from "@/lib/users";
+import { findOrCreateUser, revokeSessionsOnFirstPaidAccess } from "@/lib/users";
 import { adapters, isProviderConfigured } from "./index";
 import type { Provider, PurchaseEvent, WebhookContext } from "./types";
 
@@ -38,17 +38,10 @@ export async function handleWebhook(
   let eventRowId = logged?.id ?? null;
   if (logError) {
     if (logError.code !== "23505") throw new Error(`webhook_events: ${logError.message}`);
-    // Já recebido: só reprocessa se a tentativa anterior falhou.
-    const { data: previous } = await admin
-      .from("webhook_events")
-      .select("id, status")
-      .eq("provider", provider)
-      .eq("idempotency_key", event.idempotencyKey)
-      .single();
-    if (previous?.status !== "failed" && previous?.status !== "received") {
-      return { outcome: { status: 200, body: { ok: true, duplicate: true } } };
-    }
-    eventRowId = previous.id;
+    // Já recebido: só um processo reprocessa, e só se a tentativa anterior falhou (ou travou há 2 min).
+    const { data: claimed } = await admin.rpc("claim_webhook_event", { p_provider: provider, p_key: event.idempotencyKey });
+    if (!claimed) return { outcome: { status: 200, body: { ok: true, duplicate: true } } };
+    eventRowId = claimed;
   }
 
   const finish = async (status: "processed" | "ignored" | "failed", error: string | null = null) => {
@@ -117,6 +110,7 @@ async function applyApproved(admin: Admin, event: PurchaseEvent): Promise<Applie
     }
     if (!wasActive) newlyActive.push({ courseTitle: link.cohort?.course?.title ?? "seu curso", cohortId: link.cohort_id });
   }
+  if (newlyActive.length) await revokeSessionsOnFirstPaidAccess(userId);
 
   const email = event.buyer.email;
   return {

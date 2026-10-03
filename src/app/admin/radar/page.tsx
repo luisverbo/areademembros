@@ -102,7 +102,7 @@ export default async function RadarPage({ searchParams }: PageProps<"/admin/rada
           <p className="text-fg-muted text-sm">Sem resposta</p>
           <p className="font-display mt-1 text-3xl font-bold">{radar.pending.length}</p>
           {urgent ? (
-            <p className="text-accent mt-1 text-xs font-semibold">
+            <p className="text-accent-soft mt-1 text-xs font-semibold">
               {urgent} urgente{urgent > 1 ? "s" : ""}
             </p>
           ) : null}
@@ -139,7 +139,7 @@ export default async function RadarPage({ searchParams }: PageProps<"/admin/rada
                 {radar.confusingLessons.map((l, i) => (
                   <li key={l.lessonId} className="flex items-center gap-3 text-sm">
                     <span className="font-display text-fg-muted w-5 text-right font-bold tabular-nums">{i + 1}</span>
-                    <Link href={`/aula/${l.lessonId}`} className="hover:text-accent min-w-0 flex-1 truncate">
+                    <Link href={`/aula/${l.lessonId}`} className="hover:text-accent-soft min-w-0 flex-1 truncate">
                       <span className="font-semibold">{l.lessonTitle}</span> <span className="text-fg-muted">· {l.courseTitle}</span>
                     </Link>
                     <Badge tone="accent">
@@ -241,7 +241,7 @@ export default async function RadarPage({ searchParams }: PageProps<"/admin/rada
                     return (
                       <tr key={s.userId}>
                         <td className="py-2 pr-3">
-                          <Link href={`/admin/alunos/${s.userId}`} className="hover:text-accent font-semibold">
+                          <Link href={`/admin/alunos/${s.userId}`} className="hover:text-accent-soft font-semibold">
                             {s.name}
                           </Link>
                         </td>
@@ -254,7 +254,7 @@ export default async function RadarPage({ searchParams }: PageProps<"/admin/rada
                               href={wa}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-accent text-xs font-semibold hover:underline"
+                              className="text-accent-soft text-xs font-semibold hover:underline"
                             >
                               Chamar no WhatsApp
                             </a>

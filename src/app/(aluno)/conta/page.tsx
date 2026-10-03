@@ -26,7 +26,10 @@ export default async function AccountPage({ searchParams }: PageProps<"/conta">)
       {typeof pendingCertificate === "string" ? (
         <p role="status" className="border-accent/40 bg-accent/10 rounded-lg border px-4 py-3 text-sm">
           Para emitir o certificado, salve seu nome completo abaixo e depois{" "}
-          <a href={`/curso/${encodeURIComponent(pendingCertificate)}/certificado`} className="text-accent font-semibold hover:underline">
+          <a
+            href={`/curso/${encodeURIComponent(pendingCertificate)}/certificado`}
+            className="text-accent-soft font-semibold hover:underline"
+          >
             baixe o certificado
           </a>
           .
@@ -54,7 +57,7 @@ export default async function AccountPage({ searchParams }: PageProps<"/conta">)
                   </p>
                 </div>
                 {c.course?.slug ? (
-                  <a href={`/curso/${c.course.slug}/certificado`} className="text-accent text-sm font-semibold hover:underline">
+                  <a href={`/curso/${c.course.slug}/certificado`} className="text-accent-soft text-sm font-semibold hover:underline">
                     Baixar PDF
                   </a>
                 ) : null}

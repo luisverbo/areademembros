@@ -119,7 +119,7 @@ export default async function PerformancePage({ searchParams }: PageProps<"/admi
                   {data.cohorts.map((c) => (
                     <tr key={c.cohort_id}>
                       <td className="py-2 pr-3">
-                        <Link href={`/admin/turmas/${c.cohort_id}`} className="hover:text-accent font-semibold">
+                        <Link href={`/admin/turmas/${c.cohort_id}`} className="hover:text-accent-soft font-semibold">
                           {c.cohort_name}
                         </Link>{" "}
                         <span className="text-fg-muted">· {c.course_title}</span>{" "}

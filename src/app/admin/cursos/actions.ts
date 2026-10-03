@@ -58,7 +58,18 @@ const updateSchema = z.object({
   cover_vertical_url: formFields.optionalUrl(),
   cover_horizontal_url: formFields.optionalUrl(),
   banner_url: formFields.optionalUrl(),
-  preview_lesson_id: formFields.optionalUuid(),
+  preview_video_provider: z
+    .string()
+    .nullable()
+    .transform((v, ctx) => {
+      if (!v) return null;
+      if (v !== "youtube" && v !== "bunny") {
+        ctx.addIssue({ code: "custom", message: "Escolha onde está o vídeo." });
+        return z.NEVER;
+      }
+      return v;
+    }),
+  preview_video_id: formFields.optionalText(),
   preview_start_seconds: formFields.optionalDuration(),
   preview_end_seconds: formFields.optionalDuration(),
   certificate_enabled: formFields.checkbox(),
@@ -75,6 +86,10 @@ export async function updateCourse(courseId: string, _prev: FormState | undefine
   if (d.preview_start_seconds !== null && d.preview_end_seconds !== null && d.preview_end_seconds <= d.preview_start_seconds) {
     return { ok: false, errors: { preview_end_seconds: ["O fim da prévia precisa ser depois do início."] } };
   }
+  if (d.preview_video_id && !d.preview_video_provider) {
+    return { ok: false, errors: { preview_video_provider: ["Escolha onde está o vídeo da prévia."] } };
+  }
+  if (!d.preview_video_id) d.preview_video_provider = null;
   if (d.certificate_hours !== null && (d.certificate_hours < 1 || d.certificate_hours > 10000)) {
     return { ok: false, errors: { certificate_hours: ["Use um número de horas entre 1 e 10.000."] } };
   }

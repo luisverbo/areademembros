@@ -23,7 +23,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/entrar">) 
       <div className="w-full max-w-sm">
         <p className="font-display mb-8 text-center text-2xl font-bold">
           {env.appName.split(".")[0]}
-          <span className="text-accent">.</span>
+          <span className="text-accent-soft">.</span>
           {env.appName.split(".").slice(1).join(".")}
         </p>
         <div className="border-border bg-surface rounded-[var(--radius-card)] border p-6">

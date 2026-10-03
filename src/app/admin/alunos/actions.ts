@@ -8,7 +8,7 @@ import { requireAdmin } from "@/lib/auth";
 import { zonedInputToIso } from "@/lib/datetime";
 import { dbErrorMessage, formFields, parseForm } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
-import { findOrCreateUser } from "@/lib/users";
+import { findOrCreateUser, revokeSessionsOnFirstPaidAccess } from "@/lib/users";
 
 const newStudentSchema = z.object({
   email: z.email("Informe um e-mail válido.").trim().toLowerCase(),
@@ -27,6 +27,7 @@ export async function createStudent(_prev: FormState | undefined, formData: Form
   if (cohort_id) {
     const supabase = await createClient();
     const { error } = await supabase.rpc("enroll_user", { p_user_id: userId, p_cohort_id: cohort_id, p_origin: "manual" });
+    if (!error) await revokeSessionsOnFirstPaidAccess(userId);
     if (error) return { ok: false, message: dbErrorMessage(error) };
   }
   redirect(`/admin/alunos/${userId}`);
@@ -58,6 +59,7 @@ export async function enrollStudent(userId: string, _prev: FormState | undefined
   if (!cohortId.success) return { ok: false, errors: { cohort_id: ["Escolha a turma."] } };
   const supabase = await createClient();
   const { error } = await supabase.rpc("enroll_user", { p_user_id: userId, p_cohort_id: cohortId.data, p_origin: "manual" });
+  if (!error) await revokeSessionsOnFirstPaidAccess(userId);
   if (error) return { ok: false, message: dbErrorMessage(error) };
   revalidatePath(`/admin/alunos/${userId}`);
   return { ok: true, message: "Matrícula feita." };

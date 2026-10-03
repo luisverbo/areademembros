@@ -39,7 +39,7 @@ export async function sendWhatsapp(to: string, text: string, opts: { name?: stri
   try {
     return provider === "zapi" ? await sendZapi(phone, text) : await sendMeta(phone, text, opts.name);
   } catch (error) {
-    console.error("whatsapp", error);
+    console.error("whatsapp", error instanceof Error ? error.message : "erro");
     return { ok: false, error: "whatsapp_unreachable" };
   }
 }
