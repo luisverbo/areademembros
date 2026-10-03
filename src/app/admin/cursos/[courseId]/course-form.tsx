@@ -16,9 +16,10 @@ type Props = {
   course: Tables<"courses">;
   cohorts: { id: string; name: string }[];
   lessons: { id: string; title: string }[];
+  otherCourses: { id: string; title: string }[];
 };
 
-export function CourseForm({ siteUrl, course, cohorts, lessons }: Props) {
+export function CourseForm({ siteUrl, course, cohorts, lessons, otherCourses }: Props) {
   const [state, action] = useActionState(updateCourse.bind(null, course.id), undefined);
   const e = state?.errors ?? {};
   const [isFree, setIsFree] = useState(course.is_free);
@@ -166,6 +167,49 @@ export function CourseForm({ siteUrl, course, cohorts, lessons }: Props) {
               defaultValue={formatDuration(course.preview_end_seconds)}
               placeholder="2:40"
             />
+          </Field>
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader title="Conclusão" description="O que o aluno ganha ao concluir todas as aulas da turma." />
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="flex items-end pb-2">
+            <Checkbox
+              name="certificate_enabled"
+              defaultChecked={course.certificate_enabled}
+              label="Emitir certificado (PDF com código de verificação)"
+            />
+          </div>
+          <Field
+            label="Carga horária (horas)"
+            htmlFor="certificate_hours"
+            error={e.certificate_hours}
+            hint="Vazio = soma da duração das aulas."
+          >
+            <Input
+              id="certificate_hours"
+              name="certificate_hours"
+              type="number"
+              min={1}
+              max={10000}
+              defaultValue={course.certificate_hours ?? ""}
+            />
+          </Field>
+          <Field
+            label="Próximo curso recomendado"
+            htmlFor="next_course_id"
+            error={e.next_course_id}
+            hint="Aparece ao concluir e no topo de “Mais cursos”."
+          >
+            <Select id="next_course_id" name="next_course_id" defaultValue={course.next_course_id ?? ""}>
+              <option value="">— Automático (o que mais compram) —</option>
+              {otherCourses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.title}
+                </option>
+              ))}
+            </Select>
           </Field>
         </div>
       </Card>

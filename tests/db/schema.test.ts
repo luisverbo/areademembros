@@ -801,3 +801,89 @@ describe("mensagens (3A)", () => {
     ).rejects.toThrow(/duplicate key/);
   });
 });
+
+describe("certificados, recomendação e desempenho (3B)", () => {
+  let fe: string;
+  let course3: string;
+  let course4: string;
+  let l3: string[];
+  let cohort3: string;
+
+  beforeAll(async () => {
+    fe = await createUser(db, "fe@lc.test", { full_name: "Fernanda Lima" });
+    [{ id: course3 }] = await q<{ id: string }>(
+      "insert into courses (slug, title, is_published) values ('c3', 'Curso 3', true) returning id",
+    );
+    [{ id: course4 }] = await q<{ id: string }>(
+      "insert into courses (slug, title, is_published) values ('c4', 'Curso 4', true) returning id",
+    );
+    const [{ id: mod }] = await q<{ id: string }>("insert into modules (course_id, title) values ($1, 'M') returning id", [course3]);
+    l3 = [];
+    for (let i = 0; i < 2; i++) {
+      const [{ id }] = await q<{ id: string }>(
+        "insert into lessons (module_id, title, position, is_published, duration_seconds) values ($1, $2, $3, true, 2700) returning id",
+        [mod, `C3 Aula ${i + 1}`, i],
+      );
+      l3.push(id);
+    }
+    [{ id: cohort3 }] = await q<{ id: string }>("insert into cohorts (course_id, name) values ($1, 'T') returning id", [course3]);
+    for (const [i, id] of l3.entries())
+      await q("insert into cohort_lessons (cohort_id, lesson_id, position) values ($1, $2, $3)", [cohort3, id, i]);
+    await q("insert into enrollments (user_id, cohort_id, origin) values ($1, $2, 'purchase')", [fe, cohort3]);
+  });
+
+  const issue = () =>
+    as(db, fe, () => q<{ code: string; hours: number; student_name: string }>("select * from issue_certificate($1)", [course3]));
+
+  it("certificado só com o curso ligado e concluído; carga pela duração; uma vez por curso", async () => {
+    await expect(issue()).rejects.toThrow(/certificado indisponível/);
+    await q("update courses set certificate_enabled = true where id = $1", [course3]);
+    await expect(issue()).rejects.toThrow(/curso não concluído/);
+    for (const id of l3) await q("insert into lesson_progress (user_id, lesson_id, completed_at) values ($1, $2, now())", [fe, id]);
+    // Grava de verdade (fora da transação desfeita do helper)
+    await q("select set_config('request.jwt.claims', $1, false)", [JSON.stringify({ sub: fe, role: "authenticated" })]);
+    const [cert] = await q<{ code: string; hours: number; student_name: string }>("select * from issue_certificate($1)", [course3]);
+    await q("select set_config('request.jwt.claims', '', false)");
+    expect(cert.student_name).toBe("Fernanda Lima");
+    expect(cert.hours).toBe(2); // 2 × 45 min = 1,5 h → 2
+    expect(cert.code).toMatch(/^[0-9A-F]{12}$/);
+    const [again] = await issue();
+    expect(again.code).toBe(cert.code);
+    // Verificação pública (visitante)
+    const [v] = await as(db, null, () => q<{ student_name: string }>("select * from verify_certificate($1)", [cert.code.toLowerCase()]));
+    expect(v.student_name).toBe("Fernanda Lima");
+    // Outro aluno não vê o certificado; aluno não insere certificado direto
+    expect(await as(db, bobId, () => q("select * from certificates"))).toHaveLength(0);
+    await as(db, fe, async () => {
+      await expect(
+        db.query("insert into certificates (user_id, course_id, student_name, course_title) values ($1, $2, 'x', 'y')", [fe, course4]),
+      ).rejects.toThrow(/permission denied/);
+    });
+  });
+
+  it("recomendação: o próximo curso definido no admin vem primeiro; curso já ativo não aparece", async () => {
+    await q("update courses set next_course_id = $2 where id = $1", [course3, course4]);
+    const rows = await as(db, fe, () => q<{ course_id: string; reason: string }>("select * from recommended_courses(10)"));
+    expect(rows[0]).toMatchObject({ course_id: course4, reason: "next" });
+    expect(rows.find((r) => r.course_id === course3)).toBeUndefined();
+  });
+
+  it("painel: só admin; funil e números por turma", async () => {
+    await as(db, fe, async () => {
+      await expect(db.query("select * from cohort_stats()")).rejects.toThrow(/forbidden/);
+    });
+    const stats = await as(db, adminId, () =>
+      q<{ cohort_id: string; students: number; completed: number; avg_percent: string }>("select * from cohort_stats()"),
+    );
+    const mine = stats.find((s) => s.cohort_id === cohort3)!;
+    expect(mine).toMatchObject({ students: 1, completed: 1 });
+    expect(Number(mine.avg_percent)).toBe(100);
+    const funnel = await as(db, adminId, () =>
+      q<{ title: string; completed: number; students: number }>("select * from cohort_lesson_funnel($1)", [cohort3]),
+    );
+    expect(funnel.map((f) => [f.title, f.completed, f.students])).toEqual([
+      ["C3 Aula 1", 1, 1],
+      ["C3 Aula 2", 1, 1],
+    ]);
+  });
+});

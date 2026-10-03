@@ -54,6 +54,8 @@ const step = async (name, fn) => {
   console.log("ok");
 };
 
+// Limpa o curso de execuções anteriores (o teste cria sempre o mesmo endereço).
+await sb.from("courses").delete().eq("slug", "ia-para-negocios-locais");
 await ensureUser("admin@lc.test", "admin");
 await ensureUser("aluna@lc.test", "student");
 

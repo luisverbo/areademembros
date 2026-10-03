@@ -365,3 +365,12 @@ Ainda abertas:
 - **LGPD:** todo e-mail da Central tem link de descadastro (página `/descadastro/...` sem login e cabeçalho de um clique). Quem se descadastra não recebe mais nada da Central; e-mails de acesso e senha continuam. Promoções só para quem aceitou receber mensagens.
 - **Sem IA:** "IA para escrever a mensagem" ficou fora (decisão de 03/10/2026).
 - **Banco:** `supabase/setup/08-atualizacao-etapa-3a.sql`.
+
+## 18. Notas de implementação (Etapa 3B)
+
+- **Certificados:** ligados por curso no admin (seção "Conclusão"), com carga horária opcional (vazio = soma da duração das aulas, arredondada para cima). Ao concluir todas as aulas publicadas da turma, o aluno vê "Você concluiu este curso!" e baixa o PDF (A4 paisagem, fundo claro para imprimir). O certificado guarda o nome e o curso do dia da emissão e tem um código de 12 caracteres; qualquer pessoa confere em `/certificado/CÓDIGO`. Sem nome completo no perfil, o aluno é levado a "Minha conta" para preencher antes de emitir.
+- **Minha conta** (`/conta`): nome, WhatsApp, preferências de mensagens (avisos e ofertas) e lista de certificados. Substitui o atalho direto para "senha" no menu.
+- **Recomendação (sem IA):** o admin escolhe o "próximo curso recomendado" de cada curso. A fileira "Mais cursos para você" é ordenada por: próximo curso dos cursos do aluno (concluído pesa mais), depois os mais comprados por quem estuda os mesmos cursos ("quem fez X também fez Y"), depois a ordem da vitrine. A mensagem automática "Concluiu o curso" agora leva para a página do curso (certificado e próximo passo).
+- **Desempenho** (Admin → Desempenho): vendas e leads grátis em 30 dias, conversão grátis → compra, reembolsos, vendas e leads por semana (8 semanas), abandono por aula por turma (com a maior queda destacada) e comparação entre turmas (alunos ativos, progresso médio, concluíram, parados 7+ dias).
+- **Sem IA:** "Gerar capa com IA" segue fora (decisão de 03/10/2026).
+- **Banco:** `supabase/setup/09-atualizacao-etapa-3b.sql`.

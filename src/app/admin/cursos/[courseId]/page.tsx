@@ -26,7 +26,7 @@ export default async function CoursePage({ params }: PageProps<"/admin/cursos/[c
   const { courseId } = await params;
   const supabase = await createClient();
 
-  const [{ data: course }, { data: modules }, { data: cohorts }] = await Promise.all([
+  const [{ data: course }, { data: modules }, { data: cohorts }, { data: otherCourses }] = await Promise.all([
     supabase.from("courses").select("*").eq("id", courseId).maybeSingle(),
     supabase
       .from("modules")
@@ -37,6 +37,7 @@ export default async function CoursePage({ params }: PageProps<"/admin/cursos/[c
       .order("position", { referencedTable: "lessons" })
       .order("created_at", { referencedTable: "lessons" }),
     supabase.from("cohorts").select("id, name, release_mode, is_active, enrollments(count)").eq("course_id", courseId).order("created_at"),
+    supabase.from("courses").select("id, title").neq("id", courseId).order("showcase_order"),
   ]);
   if (!course) notFound();
 
@@ -57,7 +58,7 @@ export default async function CoursePage({ params }: PageProps<"/admin/cursos/[c
         }
       />
       <div className="flex flex-col gap-6">
-        <CourseForm siteUrl={env.siteUrl} course={course} cohorts={cohorts ?? []} lessons={allLessons} />
+        <CourseForm siteUrl={env.siteUrl} course={course} cohorts={cohorts ?? []} lessons={allLessons} otherCourses={otherCourses ?? []} />
 
         <ModulesEditor courseId={course.id} modules={modules ?? []} />
 

@@ -10,6 +10,7 @@ const items = [
   { href: "/admin/turmas", label: "Turmas" },
   { href: "/admin/alunos", label: "Alunos" },
   { href: "/admin/radar", label: "Radar" },
+  { href: "/admin/desempenho", label: "Desempenho" },
   { href: "/admin/mensagens", label: "Mensagens" },
   { href: "/admin/integracoes", label: "Integrações" },
 ];

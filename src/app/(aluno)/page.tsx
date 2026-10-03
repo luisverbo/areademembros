@@ -6,13 +6,13 @@ import { LockedCourseCard } from "@/components/student/locked-course-card";
 import { Row } from "@/components/student/row";
 import { LinkButton } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
-import { courseProgress, getCourseView, getMyCourseViews, getPublishedCourses, type CourseView } from "@/lib/catalog";
+import { courseProgress, getCourseView, getMyCourseViews, getPublishedCourses, getRecommendations, type CourseView } from "@/lib/catalog";
 
 export const metadata: Metadata = { title: "Início" };
 
 export default async function HomePage() {
   const profile = await requireUser();
-  const [mine, all] = await Promise.all([getMyCourseViews(profile), getPublishedCourses()]);
+  const [mine, all, recommended] = await Promise.all([getMyCourseViews(profile), getPublishedCourses(), getRecommendations(50)]);
 
   const enrolled = mine.filter((v) => v.access === "enrolled");
   const free = mine.filter((v) => v.access === "free" || (v.access === "admin" && v.course.is_free));
@@ -28,7 +28,9 @@ export default async function HomePage() {
     .slice(0, 12);
 
   const mineIds = new Set(mine.filter((v) => v.access !== "admin").map((v) => v.course.id));
-  const others = all.filter((c) => !mineIds.has(c.id) && !c.is_free);
+  // Ordem da fileira: recomendação (próximo curso definido no admin, depois "quem fez X também fez Y").
+  const rank = new Map(recommended.map((r, i) => [r.course.id, i]));
+  const others = all.filter((c) => !mineIds.has(c.id) && !c.is_free).sort((a, b) => (rank.get(a.id) ?? 999) - (rank.get(b.id) ?? 999));
   const othersViews = await Promise.all(others.map((c) => getCourseView(c, profile)));
 
   return (

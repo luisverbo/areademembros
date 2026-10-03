@@ -173,8 +173,18 @@ async function buildRows(automation: Automation, now: Date): Promise<NewDelivery
       const { data } = await admin.rpc("automation_courses_completed");
       const recent = (data ?? []).filter((r) => r.completed_at && new Date(r.completed_at).getTime() > now.getTime() - 3 * DAY);
       const profiles = await loadProfiles(recent.map((r) => r.user_id));
+      const { data: courses } = await admin
+        .from("courses")
+        .select("id, slug")
+        .in("id", [...new Set(recent.map((r) => r.course_id))]);
+      const slugs = new Map((courses ?? []).map((c) => [c.id, c.slug]));
       return recent.flatMap((r) =>
-        studentDeliveries(automation, profiles.get(r.user_id), { curso: r.course_title }, `completed:${r.user_id}:${r.course_id}`),
+        studentDeliveries(
+          automation,
+          profiles.get(r.user_id),
+          { curso: r.course_title, link: slugs.has(r.course_id) ? `${env.siteUrl}/curso/${slugs.get(r.course_id)}` : env.siteUrl },
+          `completed:${r.user_id}:${r.course_id}`,
+        ),
       );
     }
     case "free_no_purchase": {

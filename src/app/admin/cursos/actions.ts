@@ -61,6 +61,9 @@ const updateSchema = z.object({
   preview_lesson_id: formFields.optionalUuid(),
   preview_start_seconds: formFields.optionalDuration(),
   preview_end_seconds: formFields.optionalDuration(),
+  certificate_enabled: formFields.checkbox(),
+  certificate_hours: formFields.optionalInt(),
+  next_course_id: formFields.optionalUuid(),
 });
 
 export async function updateCourse(courseId: string, _prev: FormState | undefined, formData: FormData): Promise<FormState> {
@@ -71,6 +74,12 @@ export async function updateCourse(courseId: string, _prev: FormState | undefine
 
   if (d.preview_start_seconds !== null && d.preview_end_seconds !== null && d.preview_end_seconds <= d.preview_start_seconds) {
     return { ok: false, errors: { preview_end_seconds: ["O fim da prévia precisa ser depois do início."] } };
+  }
+  if (d.certificate_hours !== null && (d.certificate_hours < 1 || d.certificate_hours > 10000)) {
+    return { ok: false, errors: { certificate_hours: ["Use um número de horas entre 1 e 10.000."] } };
+  }
+  if (d.next_course_id === courseId) {
+    return { ok: false, errors: { next_course_id: ["Escolha outro curso."] } };
   }
 
   const supabase = await createClient();

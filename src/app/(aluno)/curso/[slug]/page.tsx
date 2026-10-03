@@ -6,7 +6,7 @@ import { LessonListItem } from "@/components/student/lesson-list-item";
 import { ProgressBar } from "@/components/student/progress-bar";
 import { buttonClasses, LinkButton } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
-import { courseProgress, getCourseBySlug, getCourseView, nextLesson } from "@/lib/catalog";
+import { courseProgress, getCourseBySlug, getCourseView, getRecommendations, nextLesson } from "@/lib/catalog";
 
 type Props = PageProps<"/curso/[slug]">;
 
@@ -26,6 +26,8 @@ export default async function CoursePage({ params }: Props) {
   const next = nextLesson(view);
   const progress = courseProgress(view);
   const image = course.banner_url ?? course.cover_horizontal_url;
+  const finished = view.access !== "locked" && progress.total > 0 && progress.done === progress.total;
+  const nextStep = finished ? (await getRecommendations(1))[0] : undefined;
 
   // Agrupa por módulo mantendo a ordem da turma.
   const groups: { title: string; items: { lesson: (typeof view.lessons)[number]; index: number }[] }[] = [];
@@ -93,6 +95,29 @@ export default async function CoursePage({ params }: Props) {
       </section>
 
       <div className="mx-auto flex max-w-5xl flex-col gap-8 px-4 pt-8 md:px-10">
+        {finished ? (
+          <section className="border-accent/50 bg-surface flex flex-col gap-4 rounded-[var(--radius-card)] border p-5 shadow-[0_12px_32px_-16px_rgba(0,0,0,0.8)] md:flex-row md:items-center">
+            <div className="flex-1">
+              <p className="font-display text-xl font-bold">Você concluiu este curso!</p>
+              <p className="text-fg-muted mt-1 text-sm">
+                {course.certificate_enabled ? "Seu certificado está pronto." : "Parabéns por chegar até o fim."}
+                {nextStep ? ` Próximo passo sugerido: ${nextStep.course.title}.` : ""}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {course.certificate_enabled ? (
+                <a href={`/curso/${course.slug}/certificado`} className={buttonClasses("primary")}>
+                  Baixar certificado
+                </a>
+              ) : null}
+              {nextStep ? (
+                <LinkButton href={`/curso/${nextStep.course.slug}`} variant="secondary">
+                  Ver {nextStep.course.title}
+                </LinkButton>
+              ) : null}
+            </div>
+          </section>
+        ) : null}
         {groups.length ? (
           groups.map((group, gi) => (
             <section key={`${group.title}-${gi}`} className="flex flex-col gap-2">

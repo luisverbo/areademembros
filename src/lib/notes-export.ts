@@ -44,7 +44,7 @@ export async function notebookToDocx(courses: NotebookCourse[], title: string): 
 }
 
 /** As fontes padrão do PDF não têm emoji e alguns símbolos: troca o que não dá para desenhar. */
-function printable(font: PDFFont, text: string): string {
+export function printable(font: PDFFont, text: string): string {
   return [...text.replace(/\t/g, "  ")]
     .map((ch) => {
       try {

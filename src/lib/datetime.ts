@@ -79,3 +79,8 @@ export function daysSince(iso: string | null | undefined, now = Date.now()): num
 export function isoDaysAgo(days: number, now = Date.now()): string {
   return new Date(now - days * 86_400_000).toISOString();
 }
+
+/** "3 de outubro de 2026" (fuso de São Paulo). */
+export function formatLongDate(iso: string, timeZone = BUSINESS_TZ): string {
+  return new Date(iso).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric", timeZone });
+}

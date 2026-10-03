@@ -24,6 +24,8 @@ export type Course = Pick<
   | "preview_lesson_id"
   | "preview_start_seconds"
   | "preview_end_seconds"
+  | "certificate_enabled"
+  | "next_course_id"
 >;
 
 /** Como o aluno chega ao curso. */
@@ -60,7 +62,7 @@ export type CourseView = {
 };
 
 const COURSE_FIELDS =
-  "id, slug, title, description, cover_vertical_url, cover_horizontal_url, banner_url, is_free, showcase_order, sales_cohort_id, is_published, preview_lesson_id, preview_start_seconds, preview_end_seconds";
+  "id, slug, title, description, cover_vertical_url, cover_horizontal_url, banner_url, is_free, showcase_order, sales_cohort_id, is_published, preview_lesson_id, preview_start_seconds, preview_end_seconds, certificate_enabled, next_course_id";
 
 /** Cursos publicados da vitrine, na ordem definida no admin. */
 export const getPublishedCourses = cache(async (): Promise<Course[]> => {
@@ -242,4 +244,20 @@ export async function getCourseByLessonId(lessonId: string): Promise<Course | nu
   if (!courseId) return null;
   const { data } = await supabase.from("courses").select(COURSE_FIELDS).eq("id", courseId).maybeSingle();
   return data;
+}
+
+export type Recommendation = { course: Course; reason: "next" | "peers" | "showcase" };
+
+/**
+ * Cursos para oferecer ao aluno, do mais indicado ao menos: o "próximo curso" que o admin
+ * definiu nos cursos dele, depois os mais comprados por quem estuda os mesmos cursos.
+ */
+export async function getRecommendations(limit = 12): Promise<Recommendation[]> {
+  const supabase = await createClient();
+  const [{ data }, published] = await Promise.all([supabase.rpc("recommended_courses", { p_limit: limit }), getPublishedCourses()]);
+  const byId = new Map(published.map((c) => [c.id, c]));
+  return (data ?? []).flatMap((r) => {
+    const course = byId.get(r.course_id);
+    return course ? [{ course, reason: r.reason as Recommendation["reason"] }] : [];
+  });
 }

@@ -14,13 +14,13 @@ export function UserMenu({ profile }: { profile: Profile }) {
   return (
     <div className="flex items-center gap-3">
       <Link
-        href="/conta/senha"
-        aria-label="Minha conta e senha"
+        href="/conta"
+        aria-label="Minha conta"
         className="bg-accent flex size-8 items-center justify-center rounded-full text-xs font-bold text-white"
       >
         {initials(profile)}
       </Link>
-      <Link href="/conta/senha" className="text-fg-soft hover:text-fg hidden text-sm sm:inline" title="Criar ou trocar a senha">
+      <Link href="/conta" className="text-fg-soft hover:text-fg hidden text-sm sm:inline" title="Minha conta">
         {profile.full_name || profile.email}
       </Link>
       <form action="/auth/sair" method="post">

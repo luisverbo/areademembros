@@ -171,6 +171,54 @@ export type Database = {
         };
         Relationships: [];
       };
+      certificates: {
+        Row: {
+          code: string;
+          course_id: string;
+          course_title: string;
+          hours: number | null;
+          id: string;
+          issued_at: string;
+          student_name: string;
+          user_id: string;
+        };
+        Insert: {
+          code?: string;
+          course_id: string;
+          course_title: string;
+          hours?: number | null;
+          id?: string;
+          issued_at?: string;
+          student_name: string;
+          user_id: string;
+        };
+        Update: {
+          code?: string;
+          course_id?: string;
+          course_title?: string;
+          hours?: number | null;
+          id?: string;
+          issued_at?: string;
+          student_name?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "certificates_course_id_fkey";
+            columns: ["course_id"];
+            isOneToOne: false;
+            referencedRelation: "courses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "certificates_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       cohort_lessons: {
         Row: {
           cohort_id: string;
@@ -387,6 +435,8 @@ export type Database = {
       courses: {
         Row: {
           banner_url: string | null;
+          certificate_enabled: boolean;
+          certificate_hours: number | null;
           cover_horizontal_url: string | null;
           cover_vertical_url: string | null;
           created_at: string;
@@ -396,6 +446,7 @@ export type Database = {
           is_published: boolean;
           lead_access: Database["public"]["Enums"]["lead_access"];
           lead_fields: Database["public"]["Enums"]["lead_fields"];
+          next_course_id: string | null;
           preview_end_seconds: number | null;
           preview_lesson_id: string | null;
           preview_start_seconds: number | null;
@@ -407,6 +458,8 @@ export type Database = {
         };
         Insert: {
           banner_url?: string | null;
+          certificate_enabled?: boolean;
+          certificate_hours?: number | null;
           cover_horizontal_url?: string | null;
           cover_vertical_url?: string | null;
           created_at?: string;
@@ -416,6 +469,7 @@ export type Database = {
           is_published?: boolean;
           lead_access?: Database["public"]["Enums"]["lead_access"];
           lead_fields?: Database["public"]["Enums"]["lead_fields"];
+          next_course_id?: string | null;
           preview_end_seconds?: number | null;
           preview_lesson_id?: string | null;
           preview_start_seconds?: number | null;
@@ -427,6 +481,8 @@ export type Database = {
         };
         Update: {
           banner_url?: string | null;
+          certificate_enabled?: boolean;
+          certificate_hours?: number | null;
           cover_horizontal_url?: string | null;
           cover_vertical_url?: string | null;
           created_at?: string;
@@ -436,6 +492,7 @@ export type Database = {
           is_published?: boolean;
           lead_access?: Database["public"]["Enums"]["lead_access"];
           lead_fields?: Database["public"]["Enums"]["lead_fields"];
+          next_course_id?: string | null;
           preview_end_seconds?: number | null;
           preview_lesson_id?: string | null;
           preview_start_seconds?: number | null;
@@ -446,6 +503,13 @@ export type Database = {
           updated_at?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "courses_next_course_id_fkey";
+            columns: ["next_course_id"];
+            isOneToOne: false;
+            referencedRelation: "courses";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "courses_preview_lesson_fk";
             columns: ["preview_lesson_id"];
@@ -1230,6 +1294,17 @@ export type Database = {
       };
       can_access_lesson: { Args: { p_lesson_id: string }; Returns: boolean };
       claim_auth_email: { Args: { p_email: string; p_kind: string }; Returns: boolean };
+      cohort_lesson_funnel: {
+        Args: { p_cohort_id: string };
+        Returns: {
+          completed: number;
+          lesson_id: string;
+          lesson_position: number;
+          started: number;
+          students: number;
+          title: string;
+        }[];
+      };
       cohort_lessons_for_user: {
         Args: { p_cohort_id: string; p_user_id?: string };
         Returns: {
@@ -1237,6 +1312,21 @@ export type Database = {
           lesson_id: string;
           lesson_position: number;
           release_at: string;
+        }[];
+      };
+      cohort_stats: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          avg_percent: number;
+          cohort_id: string;
+          cohort_name: string;
+          completed: number;
+          course_id: string;
+          course_title: string;
+          idle: number;
+          is_active: boolean;
+          lessons: number;
+          students: number;
         }[];
       };
       duplicate_cohort: { Args: { p_cohort_id: string }; Returns: string };
@@ -1269,8 +1359,28 @@ export type Database = {
         };
       };
       enrollment_is_active: { Args: { e: Database["public"]["Tables"]["enrollments"]["Row"] }; Returns: boolean };
+      has_completed_course: { Args: { p_course_id: string; p_user_id: string }; Returns: boolean };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_enrolled_in_cohort: { Args: { p_cohort_id: string }; Returns: boolean };
+      issue_certificate: {
+        Args: { p_course_id: string };
+        Returns: {
+          code: string;
+          course_id: string;
+          course_title: string;
+          hours: number | null;
+          id: string;
+          issued_at: string;
+          student_name: string;
+          user_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "certificates";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       lesson_comments: {
         Args: { p_cohort_id?: string; p_lesson_id: string };
         Returns: {
@@ -1285,6 +1395,14 @@ export type Database = {
       };
       lesson_course_id: { Args: { p_lesson_id: string }; Returns: string };
       lesson_release_at: { Args: { p_cohort_id: string; p_enrolled_at: string; p_lesson_id: string }; Returns: string };
+      recommended_courses: {
+        Args: { p_limit?: number };
+        Returns: {
+          course_id: string;
+          reason: string;
+          score: number;
+        }[];
+      };
       record_lesson_progress: {
         Args: { p_duration_seconds: number; p_lesson_id: string; p_position_seconds: number };
         Returns: {
@@ -1335,6 +1453,15 @@ export type Database = {
         };
       };
       touch_last_seen: { Args: Record<PropertyKey, never>; Returns: undefined };
+      verify_certificate: {
+        Args: { p_code: string };
+        Returns: {
+          course_title: string;
+          hours: number;
+          issued_at: string;
+          student_name: string;
+        }[];
+      };
     };
     Enums: {
       access_start: "purchase" | "cohort_start";

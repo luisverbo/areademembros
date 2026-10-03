@@ -16,8 +16,8 @@ Stack: Next.js 16 (App Router) · TypeScript · Tailwind 4 · Supabase (Postgres
 | 2B — Caderno com minuto (exporta PDF/Word), prévia estilo trailer, botão de oferta no vídeo | ✅ entregue |
 | 2C — Radar de Comentários (sem IA): fila de atendimento, aulas com mais dúvidas, buscas, alunos parados | ✅ entregue |
 | 3A — Central de Mensagens (e-mail e WhatsApp oficial/Z-API), automações, alerta urgente, resumo semanal, descadastro | ✅ entregue |
-| 3B — Certificados, recomendação de próximo curso e painel de desempenho | próxima |
-| 3C — Polimento, performance, acessibilidade e revisão de segurança | depois |
+| 3B — Certificados com verificação, recomendação de próximo curso (sem IA), painel de desempenho, Minha conta | ✅ entregue |
+| 3C — Polimento, performance, acessibilidade e revisão de segurança | próxima |
 
 ## Rodando localmente
 
@@ -49,6 +49,7 @@ update public.profiles set role = 'admin' where email = 'seu@email.com';
 | `node tests/e2e/password-smoke.mjs` | login com senha e primeiro acesso |
 | `node tests/e2e/webhooks-smoke.mjs` | webhooks de pagamento, curso grátis, webhooks de saída e Integrações |
 | `node tests/e2e/ai-smoke.mjs` | transcrição, resumo na aula e busca (sem chave da IA) |
+| `node tests/e2e/certificates-smoke.mjs` | certificado, verificação pública, recomendação e painel de desempenho |
 | `node tests/e2e/messages-smoke.mjs` | Central de Mensagens com servidor falso de e-mail/WhatsApp (veja o topo do arquivo) |
 | `node tests/e2e/radar-smoke.mjs` | Radar de Comentários: fila, responder, resolver, buscas e alunos parados |
 | `node tests/e2e/notebook-smoke.mjs` | caderno, Meu Caderno, exportação, oferta no vídeo e prévia de curso bloqueado |

@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { env } from "@/lib/env";
 
-const PUBLIC_PATHS = ["/entrar", "/auth", "/gratis", "/api/webhooks", "/api/cron", "/descadastro"];
+const PUBLIC_PATHS = ["/entrar", "/auth", "/gratis", "/api/webhooks", "/api/cron", "/descadastro", "/certificado"];
 
 /** Renova a sessão a cada navegação e manda para /entrar quem não está logado. */
 export async function updateSession(request: NextRequest) {
