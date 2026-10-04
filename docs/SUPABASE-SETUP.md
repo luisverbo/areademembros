@@ -39,7 +39,8 @@ São uns 10 minutos. Faça na ordem.
 
 **Authentication → Sign In / Providers**
 - Em **Email**, mantenha ativo.
-- Desligue **Allow new users to sign up**. As contas nascem na compra, no cadastro do curso grátis ou pelo admin; ninguém cria conta sozinho pela tela de login.
+- Desligue **Allow new users to sign up** (em **User Signups**, no alto). As contas nascem na compra, no cadastro do curso grátis ou pelo admin; ninguém cria conta sozinho pela tela de login.
+- Clique em **Email** para abrir o provedor e ligue **Secure password change** (pede login recente para trocar a senha). Salve.
 
 ## 4. E-mail (Resend) — necessário antes de liberar para alunos
 
