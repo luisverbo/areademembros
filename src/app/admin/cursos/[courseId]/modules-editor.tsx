@@ -5,10 +5,12 @@ import { Card, CardHeader } from "@/components/ui/card";
 import { ConfirmSubmit } from "@/components/ui/confirm-submit";
 import { Input } from "@/components/ui/field";
 import { formatDuration } from "@/lib/forms";
-import { createLesson, createModule, deleteModule, moveLesson, moveModule, renameModule } from "../actions";
+import { ImageUpload } from "@/components/admin/image-upload";
+import { Textarea } from "@/components/ui/field";
+import { createLesson, createModule, deleteModule, moveLesson, moveModule, updateModule } from "../actions";
 
 type Lesson = { id: string; title: string; position: number; is_published: boolean; is_free: boolean; duration_seconds: number | null };
-type Module = { id: string; title: string; position: number; lessons: Lesson[] };
+type Module = { id: string; title: string; description: string | null; cover_url: string | null; position: number; lessons: Lesson[] };
 
 const arrow = "flex size-7 items-center justify-center rounded-md text-fg-muted hover:bg-border hover:text-fg disabled:opacity-30";
 
@@ -32,12 +34,11 @@ export function ModulesEditor({ courseId, modules }: { courseId: string; modules
                   </button>
                 </form>
               </div>
-              <form action={renameModule.bind(null, module.id, courseId)} className="flex min-w-48 flex-1 gap-2">
-                <Input name="title" defaultValue={module.title} aria-label="Nome do módulo" className="h-8 font-semibold" />
-                <Button type="submit" size="sm" variant="secondary">
-                  Renomear
-                </Button>
-              </form>
+              <p className="min-w-0 flex-1 truncate font-semibold">
+                <span className="text-fg-muted mr-1.5 tabular-nums">{mi + 1}.</span>
+                {module.title}
+              </p>
+              {module.cover_url ? <Badge>Com banner</Badge> : <Badge tone="muted">Sem banner</Badge>}
               <form action={deleteModule.bind(null, module.id, courseId)}>
                 <ConfirmSubmit
                   size="sm"
@@ -48,6 +49,37 @@ export function ModulesEditor({ courseId, modules }: { courseId: string; modules
                 </ConfirmSubmit>
               </form>
             </div>
+
+            <details className="border-border group border-b">
+              <summary className="text-fg-soft hover:text-fg flex cursor-pointer list-none items-center justify-between px-3 py-2 text-sm font-medium">
+                <span>Nome, descrição e banner do módulo</span>
+                <span className="text-fg-muted text-xs">editar</span>
+              </summary>
+              <form action={updateModule.bind(null, module.id, courseId)} className="grid gap-3 p-3 md:grid-cols-[1fr_260px]">
+                <div className="flex flex-col gap-3">
+                  <Input name="title" defaultValue={module.title} aria-label="Nome do módulo" required />
+                  <Textarea
+                    name="description"
+                    defaultValue={module.description ?? ""}
+                    aria-label="Descrição do módulo"
+                    placeholder="Uma frase sobre o que este módulo ensina (aparece no banner)."
+                    className="min-h-20"
+                    maxLength={600}
+                  />
+                  <Button type="submit" size="sm" variant="secondary" className="self-start">
+                    Salvar módulo
+                  </Button>
+                </div>
+                <ImageUpload
+                  name="cover_url"
+                  label="Banner do módulo (16:9)"
+                  folder={`courses/${courseId}/modules/${module.id}`}
+                  defaultUrl={module.cover_url}
+                  aspect={16 / 9}
+                  hint="1280×720. Clique em Salvar módulo para aplicar."
+                />
+              </form>
+            </details>
 
             <ul className="divide-border divide-y">
               {module.lessons.map((lesson, li) => (

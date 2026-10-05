@@ -153,15 +153,17 @@ await step("vitrine: banner, fileiras e cadeado", async () => {
   await page.screenshot({ caret: "initial", path: `${SHOTS}/b1-home.png` });
 });
 
-await step("página do curso com aulas e cadeado", async () => {
+await step("página do curso: banner do módulo abre as aulas, com cadeado", async () => {
   await page.getByRole("link", { name: "Ver turma" }).click();
   await page.waitForURL(`${BASE}/curso/e2e-mentoria`);
-  await page.getByText("Aula 3 da mentoria").waitFor();
-  await page
-    .getByText(/faltam/)
-    .first()
-    .waitFor();
+  await page.getByRole("heading", { name: "Módulos" }).waitFor();
   await page.screenshot({ caret: "initial", path: `${SHOTS}/b2-course.png`, fullPage: true });
+  await page.getByRole("link", { name: /Módulo 1/ }).click();
+  await page.waitForURL(/\/curso\/e2e-mentoria\/modulo\//);
+  await page.getByText("Aula 3 da mentoria").waitFor();
+  const lockedLessons = await page.getByText(/^Libera /).count();
+  if (lockedLessons < 2) throw new Error("esperava 2 aulas travadas com data no módulo, achei " + lockedLessons);
+  await page.screenshot({ caret: "initial", path: `${SHOTS}/b2b-module.png`, fullPage: true });
 });
 
 await step("aula liberada: player, materiais, comentários", async () => {

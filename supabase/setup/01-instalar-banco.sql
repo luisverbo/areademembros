@@ -1,6 +1,6 @@
 -- =============================================================================
 -- LC.Academy — instalação completa do banco (gerado automaticamente; não edite)
--- Migrações: 20261001120000, 20261001120100, 20261001120200, 20261001120300, 20261002090000, 20261002090100, 20261002100000, 20261002100100, 20261003090000, 20261003100000, 20261004090000, 20261005090000, 20261006090000, 20261007090000
+-- Migrações: 20261001120000, 20261001120100, 20261001120200, 20261001120300, 20261002090000, 20261002090100, 20261002100000, 20261002100100, 20261003090000, 20261003100000, 20261004090000, 20261005090000, 20261006090000, 20261007090000, 20261008090000
 --
 -- Como usar: Supabase > SQL Editor > New query > cole TUDO > Run.
 -- Rode UMA vez, num projeto novo.
@@ -2156,6 +2156,19 @@ begin
 end;
 $$;
 
+-- >>> 20261008090000_module_banners.sql
+-- =============================================================================
+-- Área do aluno: módulos com banner e descrição; layout dos módulos por curso.
+-- =============================================================================
+
+alter table public.modules
+  add column description text check (description is null or length(description) <= 600),
+  add column cover_url text;
+
+-- cards = banners dos módulos (padrão); list = lista simples de aulas.
+alter table public.courses
+  add column module_layout text not null default 'cards' check (module_layout in ('cards', 'list'));
+
 -- Registra as migrações aplicadas (permite usar "supabase db push" no futuro).
 create schema if not exists supabase_migrations;
 create table if not exists supabase_migrations.schema_migrations (version text primary key, statements text[], name text);
@@ -2173,7 +2186,8 @@ insert into supabase_migrations.schema_migrations (version, name) values
   ('20261004090000', 'radar'),
   ('20261005090000', 'messages'),
   ('20261006090000', 'certificates'),
-  ('20261007090000', 'security_review')
+  ('20261007090000', 'security_review'),
+  ('20261008090000', 'module_banners')
 on conflict (version) do nothing;
 
 commit;

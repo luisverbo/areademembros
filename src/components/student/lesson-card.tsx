@@ -7,7 +7,8 @@ import { Cover } from "./cover";
 import { ProgressBar } from "./progress-bar";
 
 /** Card horizontal (16:9) de aula. Travada mostra cadeado e quando libera. */
-export function LessonCard({ lesson, eyebrow }: { lesson: LessonItem; eyebrow?: string }) {
+/** `fluid`: ocupa a largura da coluna (grades), em vez da largura fixa das fileiras. */
+export function LessonCard({ lesson, eyebrow, fluid, index }: { lesson: LessonItem; eyebrow?: string; fluid?: boolean; index?: number }) {
   const locked = !lesson.isReleased;
   const content = (
     <>
@@ -54,12 +55,13 @@ export function LessonCard({ lesson, eyebrow }: { lesson: LessonItem; eyebrow?: 
             : "text-fg-soft group-hover:text-fg mt-2 line-clamp-1 text-sm font-semibold"
         }
       >
+        {index !== undefined ? <span className="text-fg-muted mr-1.5 tabular-nums">{index}.</span> : null}
         {lesson.title}
       </p>
     </>
   );
 
-  const className = "group block w-[260px] shrink-0 snap-start sm:w-[320px] lg:w-[400px]";
+  const className = fluid ? "group block w-full" : "group block w-[260px] shrink-0 snap-start sm:w-[320px] lg:w-[400px]";
   return locked ? (
     <div className={`${className} cursor-not-allowed`} aria-disabled>
       {content}

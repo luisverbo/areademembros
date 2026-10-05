@@ -4,7 +4,6 @@ import { notFound, redirect } from "next/navigation";
 import { ChevronIcon, FileIcon, LockIcon } from "@/components/icons";
 import { AdminPreviewBar } from "@/components/student/admin-preview-bar";
 import { Countdown } from "@/components/student/countdown";
-import { LessonListItem } from "@/components/student/lesson-list-item";
 import { VideoPlayer } from "@/components/student/video-player";
 import { buttonClasses, LinkButton } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
@@ -14,6 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 import { embedFor } from "@/lib/video-embed";
 import { CompleteButton } from "./complete-button";
 import { Comments, type CommentItem } from "./comments";
+import { LessonNav } from "./lesson-nav";
 import { LessonSidebar } from "./lesson-sidebar";
 import { Notebook } from "./notebook";
 import { OfferButton } from "./offer-button";
@@ -46,13 +46,7 @@ export default async function LessonPage({ params, searchParams }: Props) {
   const next = view.lessons.slice(index + 1).find((l) => l.isReleased) ?? null;
   const prev = [...view.lessons.slice(0, index)].reverse().find((l) => l.isReleased) ?? null;
 
-  const lessonList = (
-    <div className="flex flex-col gap-0.5">
-      {view.lessons.map((l, i) => (
-        <LessonListItem key={l.id} lesson={l} index={i + 1} current={l.id === lessonId} compact />
-      ))}
-    </div>
-  );
+  const lessonList = <LessonNav modules={view.modules} lessons={view.lessons} currentId={lessonId} />;
 
   if (!lesson.isReleased) {
     return (

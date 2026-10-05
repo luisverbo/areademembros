@@ -72,6 +72,7 @@ const updateSchema = z.object({
   preview_video_id: formFields.optionalText(),
   preview_start_seconds: formFields.optionalDuration(),
   preview_end_seconds: formFields.optionalDuration(),
+  module_layout: z.enum(["cards", "list"]),
   certificate_enabled: formFields.checkbox(),
   certificate_hours: formFields.optionalInt(),
   next_course_id: formFields.optionalUuid(),
@@ -131,12 +132,18 @@ export async function createModule(courseId: string, formData: FormData) {
   revalidatePath(`/admin/cursos/${courseId}`);
 }
 
-export async function renameModule(moduleId: string, courseId: string, formData: FormData) {
+export async function updateModule(moduleId: string, courseId: string, formData: FormData) {
   await requireAdmin();
   const title = String(formData.get("title") ?? "").trim();
   if (!title) return;
+  const description =
+    String(formData.get("description") ?? "")
+      .trim()
+      .slice(0, 600) || null;
+  const coverRaw = String(formData.get("cover_url") ?? "").trim();
+  const cover_url = /^https:\/\//.test(coverRaw) ? coverRaw : null;
   const supabase = await createClient();
-  await supabase.from("modules").update({ title }).eq("id", moduleId);
+  await supabase.from("modules").update({ title, description, cover_url }).eq("id", moduleId);
   revalidatePath(`/admin/cursos/${courseId}`);
 }
 

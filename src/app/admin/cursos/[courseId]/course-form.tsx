@@ -52,6 +52,12 @@ export function CourseForm({ siteUrl, course, cohorts, otherCourses }: Props) {
               ))}
             </Select>
           </Field>
+          <Field label="Página do curso" htmlFor="module_layout" hint="Como as aulas aparecem para o aluno.">
+            <Select id="module_layout" name="module_layout" defaultValue={course.module_layout}>
+              <option value="cards">Módulos em banners (clica e abre as aulas)</option>
+              <option value="list">Lista simples de aulas</option>
+            </Select>
+          </Field>
           <Field label="Ordem na vitrine" htmlFor="showcase_order" error={e.showcase_order} hint="Menor aparece primeiro.">
             <Input id="showcase_order" name="showcase_order" type="number" min={0} defaultValue={course.showcase_order} />
           </Field>

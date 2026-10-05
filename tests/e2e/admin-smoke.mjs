@@ -111,7 +111,14 @@ await step("save course details", async () => {
 await step("modules and lessons", async () => {
   await page.fill('input[placeholder="Nome do novo módulo"]', "Módulo 1 · Fundamentos");
   await page.click("text=+ Módulo");
-  await page.getByRole("textbox", { name: "Nome do módulo" }).first().waitFor();
+  await page.getByText("Módulo 1 · Fundamentos").first().waitFor();
+  // Descrição e banner do módulo ficam num bloco que abre ao clicar
+  await page.getByText("Nome, descrição e banner do módulo").first().click();
+  await page.getByRole("textbox", { name: "Descrição do módulo" }).first().fill("O que você precisa saber antes de automatizar.");
+  await page.getByRole("button", { name: "Salvar módulo" }).first().click();
+  await page.waitForLoadState("networkidle");
+  const { data: mod } = await sb.from("modules").select("description").eq("title", "Módulo 1 · Fundamentos").single();
+  if (!mod?.description?.startsWith("O que você precisa")) throw new Error("descrição do módulo não salvou");
   for (const title of ["Boas-vindas", "Conectando o WhatsApp", "Primeira automação"]) {
     await page.goto(courseUrl);
     await page.fill('input[placeholder="Título da nova aula"]', title);

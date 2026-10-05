@@ -26,6 +26,7 @@ export type Course = Pick<
   | "preview_end_seconds"
   | "certificate_enabled"
   | "next_course_id"
+  | "module_layout"
 >;
 
 /** Como o aluno chega ao curso. */
@@ -37,6 +38,7 @@ export type LessonItem = {
   description: string | null;
   thumbnailUrl: string | null;
   durationSeconds: number | null;
+  moduleId: string;
   moduleTitle: string;
   isFree: boolean;
   /** Pode assistir agora. */
@@ -51,10 +53,14 @@ export type LessonItem = {
 
 export type Cohort = Pick<Tables<"cohorts">, "id" | "name" | "starts_at" | "ends_at"> & { live_url: string | null };
 
+export type ModuleItem = { id: string; title: string; description: string | null; coverUrl: string | null };
+
 export type CourseView = {
   course: Course;
   access: Access;
   cohort: Cohort | null;
+  /** Módulos na ordem do curso (só os que têm aula visível para este usuário). */
+  modules: ModuleItem[];
   lessons: LessonItem[];
   checkoutUrl: string | null;
   /** Trecho de prévia (trailer) para curso bloqueado: URL do player sem som. */
@@ -62,7 +68,7 @@ export type CourseView = {
 };
 
 const COURSE_FIELDS =
-  "id, slug, title, description, cover_vertical_url, cover_horizontal_url, banner_url, is_free, showcase_order, sales_cohort_id, is_published, preview_video_provider, preview_video_id, preview_start_seconds, preview_end_seconds, certificate_enabled, next_course_id";
+  "id, slug, title, description, cover_vertical_url, cover_horizontal_url, banner_url, is_free, showcase_order, sales_cohort_id, is_published, preview_video_provider, preview_video_id, preview_start_seconds, preview_end_seconds, certificate_enabled, next_course_id, module_layout";
 
 /** Cursos publicados da vitrine, na ordem definida no admin. */
 export const getPublishedCourses = cache(async (): Promise<Course[]> => {
@@ -135,14 +141,16 @@ export async function getCourseView(course: Course, profile: Profile): Promise<C
 
   const { data: modules } = await supabase
     .from("modules")
-    .select("title, position, lessons(id, title, description, thumbnail_url, duration_seconds, is_free, position)")
+    .select(
+      "id, title, description, cover_url, position, lessons(id, title, description, thumbnail_url, duration_seconds, is_free, position)",
+    )
     .eq("course_id", course.id)
     .order("position")
     .order("position", { referencedTable: "lessons" });
 
   const meta = new Map(
     (modules ?? []).flatMap((m) =>
-      m.lessons.map((l) => [l.id, { ...l, moduleTitle: m.title, order: m.position * 10_000 + l.position }] as const),
+      m.lessons.map((l) => [l.id, { ...l, moduleId: m.id, moduleTitle: m.title, order: m.position * 10_000 + l.position }] as const),
     ),
   );
 
@@ -184,6 +192,7 @@ export async function getCourseView(course: Course, profile: Profile): Promise<C
       description: l.description,
       thumbnailUrl: l.thumbnail_url,
       durationSeconds: l.duration_seconds,
+      moduleId: l.moduleId,
       moduleTitle: l.moduleTitle,
       isFree: l.is_free,
       isReleased: o.isReleased,
@@ -195,10 +204,17 @@ export async function getCourseView(course: Course, profile: Profile): Promise<C
     };
   });
 
+  const used = new Set(lessons.map((l) => l.moduleId));
+  const moduleItems: ModuleItem[] = (modules ?? [])
+    .filter((m) => used.has(m.id))
+    .sort((a, b) => a.position - b.position)
+    .map((m) => ({ id: m.id, title: m.title, description: m.description, coverUrl: m.cover_url }));
+
   return {
     course,
     access,
     cohort: enrollment ? enrollment.cohort : null,
+    modules: moduleItems,
     lessons,
     checkoutUrl: access === "locked" ? await checkoutUrlFor(supabase, course, profile) : null,
     previewSrc: access === "locked" ? previewSrcFor(course) : null,
@@ -277,6 +293,7 @@ export async function getLockedCourseViews(courses: Course[], profile: Profile):
     course,
     access: "locked",
     cohort: null,
+    modules: [],
     lessons: [],
     checkoutUrl: course.sales_cohort_id ? withBuyerData(checkoutById.get(course.sales_cohort_id) ?? null, profile) : null,
     previewSrc: previewSrcFor(course),

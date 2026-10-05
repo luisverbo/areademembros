@@ -41,6 +41,9 @@ const lesson = course
         .maybeSingle(),
     )
   : null;
+const firstModule = course
+  ? await must(sb.from("modules").select("id").eq("course_id", course.id).order("position").limit(1).maybeSingle())
+  : null;
 const cohort = course ? await must(sb.from("cohorts").select("id").eq("course_id", course.id).limit(1).maybeSingle()) : null;
 const freeCourse = await must(sb.from("courses").select("slug").eq("is_free", true).eq("is_published", true).limit(1).maybeSingle());
 
@@ -48,6 +51,7 @@ const pages = [
   "/entrar",
   "/",
   course && `/curso/${course.slug}`,
+  course && firstModule && `/curso/${course.slug}/modulo/${firstModule.id}`,
   lesson && `/aula/${lesson.id}`,
   "/caderno",
   "/busca?q=whatsapp",

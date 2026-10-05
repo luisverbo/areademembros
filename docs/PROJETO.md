@@ -397,3 +397,10 @@ Ainda abertas:
 ### Desempenho
 - Vitrine: cursos bloqueados usam uma consulta para todos (antes, quatro por curso). Página da aula: consultas em paralelo; registro de "último acesso" fora do caminho da resposta.
 - **Banco:** `supabase/setup/10-atualizacao-etapa-3c.sql`.
+
+## 20. Área do aluno: módulos em banners (05/10/2026)
+
+- **Página do curso:** em vez da lista de aulas, os **módulos aparecem como banners** (imagem 16:9, número, título, descrição e progresso). Clicar abre a página do módulo, com as aulas em cards. Módulo sem aula liberada mostra cadeado e a data.
+- **Admin:** em Cursos → Módulos e aulas, cada módulo tem "Nome, descrição e banner do módulo" (banner 1280×720). No curso, "Página do curso" escolhe entre **Módulos em banners** (padrão) e **Lista simples de aulas**.
+- **Página da aula:** a lista lateral agora é por módulo, abrindo e fechando (o módulo da aula atual começa aberto), com numeração contínua das aulas.
+- **Banco:** `supabase/setup/11-atualizacao-modulos.sql`.

@@ -30,7 +30,7 @@ export default async function CoursePage({ params }: PageProps<"/admin/cursos/[c
     supabase.from("courses").select("*").eq("id", courseId).maybeSingle(),
     supabase
       .from("modules")
-      .select("id, title, position, lessons(id, title, position, is_published, is_free, duration_seconds)")
+      .select("id, title, description, cover_url, position, lessons(id, title, position, is_published, is_free, duration_seconds)")
       .eq("course_id", courseId)
       .order("position")
       .order("created_at")
