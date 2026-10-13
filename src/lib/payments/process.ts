@@ -1,6 +1,5 @@
 import "server-only";
-import { createAuthLink } from "@/lib/auth-links";
-import { accessEmail, sendEmail } from "@/lib/email";
+import { sendAccessEmail } from "@/lib/access-email";
 import { dispatchEvent } from "@/lib/outgoing-webhooks";
 import { normalizeWhatsapp } from "@/lib/phone";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -147,11 +146,11 @@ async function applyApproved(admin: Admin, event: PurchaseEvent): Promise<Applie
     after: async () => {
       // E-mail de acesso só quando o acesso nasce agora (evita repetir em CONFIRMED + RECEIVED, renovações etc.).
       if (newlyActive.length) {
-        const link = await createAuthLink(email, "password");
-        if (link)
-          await sendEmail(
-            accessEmail(email, link, { name: event.buyer.name, courseTitle: newlyActive.map((n) => n.courseTitle).join(" + ") }),
-          );
+        const sent = await sendAccessEmail(email, {
+          name: event.buyer.name,
+          courseTitle: newlyActive.map((n) => n.courseTitle).join(" + "),
+        });
+        if (!sent.ok) console.error("e-mail de acesso (webhook)", email, sent.reason);
       }
       await dispatchEvent("purchase.approved", {
         provider: event.provider,

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import type { FormState } from "@/components/ui/form-message";
+import { accessEmailMessage, sendAccessEmail } from "@/lib/access-email";
 import { requireAdmin } from "@/lib/auth";
 import { zonedInputToIso } from "@/lib/datetime";
 import { dbErrorMessage, formFields, parseForm } from "@/lib/forms";
@@ -24,13 +25,18 @@ export async function createStudent(_prev: FormState | undefined, formData: Form
   const { email, full_name, whatsapp, cohort_id } = parsed.data;
 
   const userId = await findOrCreateUser({ email, fullName: full_name, whatsapp });
+  let notice = "";
   if (cohort_id) {
     const supabase = await createClient();
     const { error } = await supabase.rpc("enroll_user", { p_user_id: userId, p_cohort_id: cohort_id, p_origin: "manual" });
-    if (!error) await revokeSessionsOnFirstPaidAccess(userId);
     if (error) return { ok: false, message: dbErrorMessage(error) };
+    await revokeSessionsOnFirstPaidAccess(userId);
+    if (formData.get("send_access") === "on") {
+      const courseTitle = await cohortCourseTitle(cohort_id);
+      notice = accessEmailMessage(email, await sendAccessEmail(email, { name: full_name, courseTitle }));
+    }
   }
-  redirect(`/admin/alunos/${userId}`);
+  redirect(`/admin/alunos/${userId}${notice ? `?aviso=${encodeURIComponent(notice)}` : ""}`);
 }
 
 const profileSchema = z.object({
@@ -59,10 +65,13 @@ export async function enrollStudent(userId: string, _prev: FormState | undefined
   if (!cohortId.success) return { ok: false, errors: { cohort_id: ["Escolha a turma."] } };
   const supabase = await createClient();
   const { error } = await supabase.rpc("enroll_user", { p_user_id: userId, p_cohort_id: cohortId.data, p_origin: "manual" });
-  if (!error) await revokeSessionsOnFirstPaidAccess(userId);
   if (error) return { ok: false, message: dbErrorMessage(error) };
+  await revokeSessionsOnFirstPaidAccess(userId);
   revalidatePath(`/admin/alunos/${userId}`);
-  return { ok: true, message: "Matrícula feita." };
+  const { data: student } = await supabase.from("profiles").select("email, full_name").eq("id", userId).single();
+  if (!student) return { ok: true, message: "Matrícula feita." };
+  const sent = await sendAccessEmail(student.email, { name: student.full_name, courseTitle: await cohortCourseTitle(cohortId.data) });
+  return { ok: sent.ok, message: `Matrícula feita. ${accessEmailMessage(student.email, sent)}` };
 }
 
 const enrollmentSchema = z.object({
@@ -141,4 +150,33 @@ export async function revokeModule(userId: string, moduleId: string) {
   const supabase = await createClient();
   await supabase.from("module_grants").delete().eq("user_id", userId).eq("module_id", moduleId);
   revalidatePath(`/admin/alunos/${userId}`);
+}
+
+async function cohortCourseTitle(cohortId: string): Promise<string> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("cohorts").select("course:courses!cohorts_course_id_fkey(title)").eq("id", cohortId).maybeSingle();
+  return data?.course?.title ?? "seu curso";
+}
+
+/** Reenvia o e-mail de acesso (link de criar a senha) para o aluno. */
+export async function resendAccess(userId: string): Promise<FormState> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const [{ data: student }, { data: enrollment }] = await Promise.all([
+    supabase.from("profiles").select("email, full_name").eq("id", userId).single(),
+    supabase
+      .from("enrollments")
+      .select("cohort:cohorts(course:courses!cohorts_course_id_fkey(title))")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  if (!student) return { ok: false, message: "Aluno não encontrado." };
+  const sent = await sendAccessEmail(student.email, {
+    name: student.full_name,
+    courseTitle: enrollment?.cohort?.course?.title ?? "a área de membros",
+  });
+  return { ok: sent.ok, message: accessEmailMessage(student.email, sent) };
 }

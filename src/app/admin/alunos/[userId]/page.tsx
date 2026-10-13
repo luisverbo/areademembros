@@ -12,7 +12,7 @@ import { formatDuration } from "@/lib/forms";
 import { enrollmentOriginLabels, enrollmentStatusLabels, providerLabels } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 import { deleteEnrollment, removeUnlock, revokeModule } from "../actions";
-import { EnrollmentForm, EnrollStudentForm, GrantModuleForm, ProfileForm, UnlockForm } from "./forms";
+import { EnrollmentForm, EnrollStudentForm, GrantModuleForm, ProfileForm, ResendAccessButton, UnlockForm } from "./forms";
 
 type Props = PageProps<"/admin/alunos/[userId]">;
 
@@ -23,9 +23,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return { title: data?.full_name || data?.email || "Aluno" };
 }
 
-export default async function StudentPage({ params }: Props) {
+export default async function StudentPage({ params, searchParams }: Props) {
   await requireAdmin();
   const { userId } = await params;
+  const aviso = (await searchParams).aviso;
   const supabase = await createClient();
 
   const [
@@ -110,8 +111,21 @@ export default async function StudentPage({ params }: Props) {
           </>
         }
         back={{ href: "/admin/alunos", label: "Alunos" }}
-        actions={profile.role === "admin" ? <Badge tone="accent">Admin</Badge> : null}
+        actions={
+          <>
+            {profile.role === "admin" ? <Badge tone="accent">Admin</Badge> : null}
+            <ResendAccessButton userId={profile.id} />
+          </>
+        }
       />
+      {typeof aviso === "string" ? (
+        <p
+          role="status"
+          className={`mb-6 rounded-lg border px-4 py-3 text-sm ${aviso.includes("NÃO") ? "border-accent/50 bg-accent/10" : "border-border bg-surface-2"}`}
+        >
+          {aviso}
+        </p>
+      ) : null}
       <div className="flex flex-col gap-6">
         <Card>
           <CardHeader title="Dados" />

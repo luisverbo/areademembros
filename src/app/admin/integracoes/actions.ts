@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { FormState } from "@/components/ui/form-message";
 import { requireAdmin } from "@/lib/auth";
+import { centralEmail, isEmailConfigured, sendEmail } from "@/lib/email";
 import { isPrivateHost } from "@/lib/private-host";
 import { dbErrorMessage, formFields, parseForm } from "@/lib/forms";
 import { deliver, OUTGOING_EVENTS } from "@/lib/outgoing-webhooks";
@@ -62,4 +63,22 @@ export async function testOutgoingWebhook(id: string): Promise<FormState> {
   return result.error
     ? { ok: false, message: `O destino não aceitou: ${result.error}.` }
     : { ok: true, message: `Teste entregue (HTTP ${result.status}).` };
+}
+
+/** Manda um e-mail de teste para o próprio admin e devolve a resposta do Resend. */
+export async function sendTestEmail(): Promise<FormState> {
+  const me = await requireAdmin();
+  if (!isEmailConfigured()) {
+    return { ok: false, message: "Falta configurar na Vercel: RESEND_API_KEY e EMAIL_FROM (depois, Redeploy)." };
+  }
+  const result = await sendEmail(
+    centralEmail(me.email, {
+      subject: "Teste de e-mail da área de membros",
+      body: "Se você recebeu este e-mail, o envio pelo Resend está funcionando.\n\nConfira se ele chegou na caixa de entrada (e não no spam).",
+      unsubscribeUrl: null,
+    }),
+  );
+  return result.ok
+    ? { ok: true, message: `Enviado para ${me.email}. Confira a caixa de entrada e o spam.` }
+    : { ok: false, message: `O Resend recusou: ${result.error}` };
 }

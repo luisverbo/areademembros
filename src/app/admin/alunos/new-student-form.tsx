@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Field, Input, Select } from "@/components/ui/field";
+import { Checkbox, Field, Input, Select } from "@/components/ui/field";
 import { FormMessage } from "@/components/ui/form-message";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { createStudent } from "./actions";
@@ -31,6 +31,11 @@ export function NewStudentForm({ cohorts }: { cohorts: { id: string; label: stri
           </Select>
         </Field>
       </div>
+      <Checkbox
+        name="send_access"
+        defaultChecked
+        label="Enviar o e-mail de acesso (link para criar a senha) quando matricular numa turma"
+      />
       <FormMessage state={state} />
       <div>
         <SubmitButton pendingText="Criando…">Adicionar aluno</SubmitButton>

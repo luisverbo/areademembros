@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { Field, Input, Select } from "@/components/ui/field";
-import { FormMessage } from "@/components/ui/form-message";
+import { Button } from "@/components/ui/button";
+import { FormMessage, type FormState } from "@/components/ui/form-message";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { isoToZonedInput } from "@/lib/datetime";
 import { enrollmentStatusLabels } from "@/lib/labels";
-import { enrollStudent, grantModule, unlockLesson, updateEnrollment, updateStudent } from "../actions";
+import { enrollStudent, grantModule, resendAccess, unlockLesson, updateEnrollment, updateStudent } from "../actions";
 
 type Option = { id: string; label: string };
 
@@ -165,5 +166,19 @@ export function GrantModuleForm({ userId, modules }: { userId: string; modules: 
       </div>
       <FormMessage state={state} />
     </form>
+  );
+}
+
+/** Reenvia o e-mail de acesso (link de criar a senha) e mostra se foi ou por que não foi. */
+export function ResendAccessButton({ userId }: { userId: string }) {
+  const [state, setState] = useState<FormState>();
+  const [pending, start] = useTransition();
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-2">
+      <Button size="sm" variant="secondary" disabled={pending} onClick={() => start(async () => setState(await resendAccess(userId)))}>
+        {pending ? "Enviando…" : "Reenviar e-mail de acesso"}
+      </Button>
+      {state?.message ? <FormMessage state={state} className="max-w-md py-1 text-xs" /> : null}
+    </div>
   );
 }

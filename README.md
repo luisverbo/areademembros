@@ -49,6 +49,7 @@ update public.profiles set role = 'admin' where email = 'seu@email.com';
 | `node tests/e2e/password-smoke.mjs` | login com senha e primeiro acesso |
 | `node tests/e2e/webhooks-smoke.mjs` | webhooks de pagamento, curso grátis, webhooks de saída e Integrações |
 | `node tests/e2e/ai-smoke.mjs` | transcrição, resumo na aula e busca (sem chave da IA) |
+| `node tests/e2e/access-email-smoke.mjs` | e-mail de acesso no cadastro pelo admin, reenvio e teste do Resend (servidor falso; veja o topo do arquivo) |
 | `node tests/e2e/order-bump-smoke.mjs` | módulos extras (order bump): compra na Kiwify, cadeado, reembolso e liberação manual |
 | `node tests/e2e/a11y-scan.mjs` | varredura de acessibilidade (axe) nas telas principais |
 | `node tests/e2e/certificates-smoke.mjs` | certificado, verificação pública, recomendação e painel de desempenho |

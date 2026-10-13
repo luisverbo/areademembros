@@ -48,7 +48,13 @@ describe("e-mails", () => {
     process.env.RESEND_API_KEY = "re_test";
     process.env.EMAIL_FROM = "x@lc.test";
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("bad", { status: 422 })));
-    expect(await sendEmail(magicLinkEmail("a@b.c", "https://x"))).toEqual({ ok: false, error: "resend_422" });
+    expect(await sendEmail(magicLinkEmail("a@b.c", "https://x"))).toEqual({ ok: false, error: "resend_422: bad" });
+    // O motivo do Resend aparece para o admin (ex.: domínio não verificado)
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ message: "The lc.test domain is not verified." }, { status: 403 })));
+    expect(await sendEmail(magicLinkEmail("a@b.c", "https://x"))).toEqual({
+      ok: false,
+      error: "resend_403: The lc.test domain is not verified.",
+    });
   });
 });
 

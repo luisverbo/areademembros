@@ -32,7 +32,13 @@ export async function sendEmail(message: Message): Promise<{ ok: boolean; id?: s
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       console.error("resend", res.status, body.slice(0, 300));
-      return { ok: false, error: `resend_${res.status}` };
+      let detail = "";
+      try {
+        detail = String((JSON.parse(body) as { message?: string }).message ?? "");
+      } catch {
+        detail = body.slice(0, 200);
+      }
+      return { ok: false, error: `resend_${res.status}${detail ? `: ${detail.slice(0, 200)}` : ""}` };
     }
     const data = (await res.json().catch(() => ({}))) as { id?: string };
     return { ok: true, id: data.id };

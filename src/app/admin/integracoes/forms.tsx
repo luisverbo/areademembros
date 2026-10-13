@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { FormMessage, type FormState } from "@/components/ui/form-message";
 import { SubmitButton } from "@/components/ui/submit-button";
-import { createOutgoingWebhook, testOutgoingWebhook } from "./actions";
+import { createOutgoingWebhook, sendTestEmail, testOutgoingWebhook } from "./actions";
 
 export function CopyField({ value, label }: { value: string; label?: string }) {
   const [copied, setCopied] = useState(false);
@@ -84,5 +84,24 @@ export function NewWebhookForm({ events }: { events: { id: string; label: string
         </SubmitButton>
       </div>
     </form>
+  );
+}
+
+export function EmailTestButton() {
+  const [state, setState] = useState<FormState>();
+  const [pending, start] = useTransition();
+  return (
+    <div className="flex flex-col gap-2">
+      <Button
+        size="sm"
+        variant="secondary"
+        className="self-start"
+        disabled={pending}
+        onClick={() => start(async () => setState(await sendTestEmail()))}
+      >
+        {pending ? "Enviando…" : "Enviar e-mail de teste para mim"}
+      </Button>
+      <FormMessage state={state} className="text-xs" />
+    </div>
   );
 }

@@ -14,7 +14,7 @@ import { adapters, isProvider, isProviderConfigured } from "@/lib/payments";
 import { createClient } from "@/lib/supabase/server";
 import { deleteOutgoingWebhook, toggleOutgoingWebhook } from "../actions";
 import { OTHER_INTEGRATIONS, PAYMENT_INTEGRATIONS } from "../catalog";
-import { CopyField, NewWebhookForm, SecretField, TestButton } from "../forms";
+import { CopyField, EmailTestButton, NewWebhookForm, SecretField, TestButton } from "../forms";
 
 type Props = PageProps<"/admin/integracoes/[slug]">;
 
@@ -159,6 +159,9 @@ export default async function IntegrationPage({ params }: Props) {
             />
             <div className="mt-5">
               <EnvList names={["RESEND_API_KEY", "EMAIL_FROM"]} />
+            </div>
+            <div className="mt-5">
+              <EmailTestButton />
             </div>
           </Card>
         </div>
