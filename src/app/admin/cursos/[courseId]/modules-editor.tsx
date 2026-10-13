@@ -8,9 +8,27 @@ import { formatDuration } from "@/lib/forms";
 import { ImageUpload } from "@/components/admin/image-upload";
 import { Textarea } from "@/components/ui/field";
 import { createLesson, createModule, deleteModule, moveLesson, moveModule, updateModule } from "../actions";
+import { ModuleAddon } from "./module-addon";
 
 type Lesson = { id: string; title: string; position: number; is_published: boolean; is_free: boolean; duration_seconds: number | null };
-type Module = { id: string; title: string; description: string | null; cover_url: string | null; position: number; lessons: Lesson[] };
+type Product = {
+  id: string;
+  provider: "kiwify" | "hotmart" | "yampi" | "mercadopago" | "asaas";
+  external_product_id: string;
+  label: string | null;
+};
+type Module = {
+  id: string;
+  title: string;
+  description: string | null;
+  cover_url: string | null;
+  is_addon: boolean;
+  addon_checkout_url: string | null;
+  position: number;
+  lessons: Lesson[];
+  module_products: Product[];
+  module_grants: { count: number }[];
+};
 
 const arrow = "flex size-7 items-center justify-center rounded-md text-fg-muted hover:bg-border hover:text-fg disabled:opacity-30";
 
@@ -38,6 +56,7 @@ export function ModulesEditor({ courseId, modules }: { courseId: string; modules
                 <span className="text-fg-muted mr-1.5 tabular-nums">{mi + 1}.</span>
                 {module.title}
               </p>
+              {module.is_addon ? <Badge tone="accent">Extra pago</Badge> : null}
               {module.cover_url ? <Badge>Com banner</Badge> : <Badge tone="muted">Sem banner</Badge>}
               <form action={deleteModule.bind(null, module.id, courseId)}>
                 <ConfirmSubmit
@@ -79,6 +98,23 @@ export function ModulesEditor({ courseId, modules }: { courseId: string; modules
                   hint="1280×720. Clique em Salvar módulo para aplicar."
                 />
               </form>
+            </details>
+
+            <details className="border-border group border-b" open={module.is_addon && !module.module_products.length}>
+              <summary className="text-fg-soft hover:text-fg flex cursor-pointer list-none items-center justify-between px-3 py-2 text-sm font-medium">
+                <span>Módulo extra (order bump)</span>
+                <span className="text-fg-muted text-xs">
+                  {module.is_addon ? `${module.module_products.length} produto(s)` : "desligado"}
+                </span>
+              </summary>
+              <ModuleAddon
+                courseId={courseId}
+                moduleId={module.id}
+                isAddon={module.is_addon}
+                checkoutUrl={module.addon_checkout_url}
+                products={module.module_products}
+                grants={module.module_grants[0]?.count ?? 0}
+              />
             </details>
 
             <ul className="divide-border divide-y">

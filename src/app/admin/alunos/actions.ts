@@ -122,3 +122,23 @@ export async function removeUnlock(userId: string, lessonId: string) {
   await supabase.from("lesson_unlocks").delete().eq("user_id", userId).eq("lesson_id", lessonId);
   revalidatePath(`/admin/alunos/${userId}`);
 }
+
+export async function grantModule(userId: string, _prev: FormState | undefined, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  const moduleId = z.uuid().safeParse(formData.get("module_id"));
+  if (!moduleId.success) return { ok: false, errors: { module_id: ["Escolha o módulo extra."] } };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("module_grants")
+    .upsert({ user_id: userId, module_id: moduleId.data, origin: "manual", status: "active" }, { onConflict: "user_id,module_id" });
+  if (error) return { ok: false, message: dbErrorMessage(error) };
+  revalidatePath(`/admin/alunos/${userId}`);
+  return { ok: true, message: "Módulo extra liberado para o aluno." };
+}
+
+export async function revokeModule(userId: string, moduleId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+  await supabase.from("module_grants").delete().eq("user_id", userId).eq("module_id", moduleId);
+  revalidatePath(`/admin/alunos/${userId}`);
+}

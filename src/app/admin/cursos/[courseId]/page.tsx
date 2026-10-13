@@ -30,8 +30,11 @@ export default async function CoursePage({ params }: PageProps<"/admin/cursos/[c
     supabase.from("courses").select("*").eq("id", courseId).maybeSingle(),
     supabase
       .from("modules")
-      .select("id, title, description, cover_url, position, lessons(id, title, position, is_published, is_free, duration_seconds)")
+      .select(
+        "id, title, description, cover_url, is_addon, addon_checkout_url, position, lessons(id, title, position, is_published, is_free, duration_seconds), module_products(id, provider, external_product_id, label), module_grants(count)",
+      )
       .eq("course_id", courseId)
+      .eq("module_grants.status", "active")
       .order("position")
       .order("created_at")
       .order("position", { referencedTable: "lessons" })

@@ -43,6 +43,8 @@ export type LessonItem = {
   isFree: boolean;
   /** Pode assistir agora. */
   isReleased: boolean;
+  /** Aula de módulo extra (order bump) que o aluno não comprou. */
+  addonLocked: boolean;
   /** Quando libera (aulas da turma ainda travadas). */
   releaseAt: string | null;
   percent: number;
@@ -53,7 +55,18 @@ export type LessonItem = {
 
 export type Cohort = Pick<Tables<"cohorts">, "id" | "name" | "starts_at" | "ends_at"> & { live_url: string | null };
 
-export type ModuleItem = { id: string; title: string; description: string | null; coverUrl: string | null };
+export type ModuleItem = {
+  id: string;
+  title: string;
+  description: string | null;
+  coverUrl: string | null;
+  /** Módulo extra pago à parte (order bump). */
+  isAddon: boolean;
+  /** O aluno tem o módulo extra (ou não é extra). */
+  owned: boolean;
+  /** Link para comprar o módulo extra depois. */
+  addonCheckoutUrl: string | null;
+};
 
 export type CourseView = {
   course: Course;
@@ -142,7 +155,7 @@ export async function getCourseView(course: Course, profile: Profile): Promise<C
   const { data: modules } = await supabase
     .from("modules")
     .select(
-      "id, title, description, cover_url, position, lessons(id, title, description, thumbnail_url, duration_seconds, is_free, position)",
+      "id, title, description, cover_url, is_addon, addon_checkout_url, position, lessons(id, title, description, thumbnail_url, duration_seconds, is_free, position)",
     )
     .eq("course_id", course.id)
     .order("position")
@@ -173,6 +186,15 @@ export async function getCourseView(course: Course, profile: Profile): Promise<C
       }));
   }
 
+  // Módulos extras: quais o aluno tem.
+  const addonIds = (modules ?? []).filter((m) => m.is_addon).map((m) => m.id);
+  const { data: grants } =
+    addonIds.length && access !== "admin"
+      ? await supabase.from("module_grants").select("module_id").eq("user_id", profile.id).eq("status", "active").in("module_id", addonIds)
+      : { data: [] };
+  const ownedAddons = new Set((grants ?? []).map((g) => g.module_id));
+  const addonLockedModule = (moduleId: string) => access !== "admin" && addonIds.includes(moduleId) && !ownedAddons.has(moduleId);
+
   const { data: progress } = await supabase
     .from("lesson_progress")
     .select("lesson_id, percent, completed_at, last_position_seconds, last_accessed_at")
@@ -195,7 +217,8 @@ export async function getCourseView(course: Course, profile: Profile): Promise<C
       moduleId: l.moduleId,
       moduleTitle: l.moduleTitle,
       isFree: l.is_free,
-      isReleased: o.isReleased,
+      isReleased: o.isReleased && !addonLockedModule(l.moduleId),
+      addonLocked: addonLockedModule(l.moduleId),
       releaseAt: o.releaseAt,
       percent: p ? Number(p.percent) : 0,
       completed: Boolean(p?.completed_at),
@@ -208,7 +231,15 @@ export async function getCourseView(course: Course, profile: Profile): Promise<C
   const moduleItems: ModuleItem[] = (modules ?? [])
     .filter((m) => used.has(m.id))
     .sort((a, b) => a.position - b.position)
-    .map((m) => ({ id: m.id, title: m.title, description: m.description, coverUrl: m.cover_url }));
+    .map((m) => ({
+      id: m.id,
+      title: m.title,
+      description: m.description,
+      coverUrl: m.cover_url,
+      isAddon: m.is_addon,
+      owned: !addonLockedModule(m.id),
+      addonCheckoutUrl: m.addon_checkout_url ? withBuyerData(m.addon_checkout_url, profile) : null,
+    }));
 
   return {
     course,
@@ -233,8 +264,10 @@ export function upcomingLesson(view: CourseView): LessonItem | null {
 }
 
 export function courseProgress(view: CourseView): { done: number; total: number; percent: number } {
-  const total = view.lessons.length;
-  const done = view.lessons.filter((l) => l.completed).length;
+  // Módulo extra que o aluno não comprou não conta no progresso do curso.
+  const counted = view.lessons.filter((l) => !l.addonLocked);
+  const total = counted.length;
+  const done = counted.filter((l) => l.completed).length;
   return { done, total, percent: total ? Math.round((done / total) * 100) : 0 };
 }
 

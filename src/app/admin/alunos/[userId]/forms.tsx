@@ -6,7 +6,7 @@ import { FormMessage } from "@/components/ui/form-message";
 import { SubmitButton } from "@/components/ui/submit-button";
 import { isoToZonedInput } from "@/lib/datetime";
 import { enrollmentStatusLabels } from "@/lib/labels";
-import { enrollStudent, unlockLesson, updateEnrollment, updateStudent } from "../actions";
+import { enrollStudent, grantModule, unlockLesson, updateEnrollment, updateStudent } from "../actions";
 
 type Option = { id: string; label: string };
 
@@ -129,6 +129,32 @@ export function UnlockForm({ userId, lessons }: { userId: string; lessons: Optio
             {lessons.map((l) => (
               <option key={l.id} value={l.id}>
                 {l.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <SubmitButton variant="secondary" pendingText="Liberando…">
+          Liberar
+        </SubmitButton>
+      </div>
+      <FormMessage state={state} />
+    </form>
+  );
+}
+
+export function GrantModuleForm({ userId, modules }: { userId: string; modules: Option[] }) {
+  const [state, action] = useActionState(grantModule.bind(null, userId), undefined);
+  return (
+    <form action={action} className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-end gap-3">
+        <Field label="Liberar módulo extra" htmlFor="grant_module" error={state?.errors?.module_id} className="min-w-64 flex-1">
+          <Select id="grant_module" name="module_id" defaultValue="">
+            <option value="" disabled>
+              Escolha o módulo…
+            </option>
+            {modules.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
               </option>
             ))}
           </Select>

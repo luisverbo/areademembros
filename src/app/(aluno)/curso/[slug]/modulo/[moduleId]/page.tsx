@@ -6,7 +6,7 @@ import { Cover } from "@/components/student/cover";
 import { LessonCard } from "@/components/student/lesson-card";
 import { moduleStats } from "@/components/student/module-card";
 import { ProgressBar } from "@/components/student/progress-bar";
-import { LinkButton } from "@/components/ui/button";
+import { buttonClasses, LinkButton } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
 import { getCourseBySlug, getCourseView } from "@/lib/catalog";
 import { formatReleaseDate } from "@/lib/datetime";
@@ -61,7 +61,24 @@ export default async function ModulePage({ params }: Props) {
             <ProgressBar percent={stats.percent} />
           </div>
           <div className="flex flex-wrap gap-3 pt-1">
-            {stats.next ? (
+            {mod.isAddon && !mod.owned ? (
+              <div className="border-accent/50 bg-surface/90 flex max-w-xl flex-col gap-3 rounded-[var(--radius-card)] border p-4">
+                <p className="text-sm">
+                  <span className="bg-accent mr-2 rounded px-1.5 py-0.5 text-[11px] font-bold text-white uppercase">Extra</span>
+                  Este módulo é um conteúdo extra do curso, liberado para quem adquiriu.
+                </p>
+                {mod.addonCheckoutUrl ? (
+                  <a
+                    href={mod.addonCheckoutUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={buttonClasses("primary", "md", "self-start")}
+                  >
+                    Desbloquear este extra
+                  </a>
+                ) : null}
+              </div>
+            ) : stats.next ? (
               <LinkButton href={`/aula/${stats.next.id}`} size="lg">
                 <PlayIcon width={18} height={18} />
                 {stats.done > 0 || stats.next.percent > 0 ? "Continuar" : "Começar módulo"}

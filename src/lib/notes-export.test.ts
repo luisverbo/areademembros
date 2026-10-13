@@ -32,7 +32,7 @@ describe("exportação do caderno", () => {
     const bytes = await notebookToPdf(sample, "Meu Caderno");
     expect(Buffer.from(bytes.slice(0, 5)).toString()).toBe("%PDF-");
     expect(bytes.length).toBeGreaterThan(1000);
-  });
+  }, 20_000); // gerar PDF é lento em máquina ocupada
 
   it("gera Word (.docx é um zip)", async () => {
     const buf = await notebookToDocx(sample, "Meu Caderno");

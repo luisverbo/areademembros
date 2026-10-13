@@ -1,5 +1,5 @@
 import type { Adapter } from "./types";
-import { get, hmac, ids, safeEqual, str } from "./util";
+import { deepValues, get, hmac, ids, safeEqual, str } from "./util";
 
 // Kiwify: ?signature= (HMAC-SHA1 hex com o token do webhook). Corpo plano ou embrulhado em { order: {...} }.
 // A documentação calcula sobre JSON.stringify do corpo; aceitamos também o corpo cru por segurança.
@@ -36,7 +36,8 @@ export const kiwify: Adapter = {
       kind,
       eventType: type || status,
       transactionId: orderId,
-      productIds: ids(get(o, "Product", "product_id")),
+      // Produto principal primeiro; depois qualquer outro product_id do aviso (order bumps, se vierem juntos).
+      productIds: ids(get(o, "Product", "product_id"), ...deepValues(o, "product_id")),
       buyer: {
         email: str(get(o, "Customer", "email"))?.toLowerCase() ?? null,
         name: str(get(o, "Customer", "full_name")) ?? str(get(o, "Customer", "first_name")),

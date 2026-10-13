@@ -938,3 +938,76 @@ describe("revisão de segurança (3C)", () => {
     expect(await q("select 1 from auth.sessions where user_id = $1", [bobId])).toHaveLength(1);
   });
 });
+
+describe("módulos extras / order bump", () => {
+  let gil: string;
+  let course5: string;
+  let base: string;
+  let extra: string;
+  let extraModule: string;
+
+  beforeAll(async () => {
+    gil = await createUser(db, "gil@lc.test", { full_name: "Gil" });
+    [{ id: course5 }] = await q<{ id: string }>(
+      "insert into courses (slug, title, is_published) values ('plug', 'Plug Editor', true) returning id",
+    );
+    const [{ id: m1 }] = await q<{ id: string }>("insert into modules (course_id, title, position) values ($1, 'Base', 0) returning id", [
+      course5,
+    ]);
+    [{ id: extraModule }] = await q<{ id: string }>(
+      "insert into modules (course_id, title, position, is_addon) values ($1, 'Atualizações', 1, true) returning id",
+      [course5],
+    );
+    [{ id: base }] = await q<{ id: string }>(
+      "insert into lessons (module_id, title, is_published) values ($1, 'Instalação', true) returning id",
+      [m1],
+    );
+    [{ id: extra }] = await q<{ id: string }>(
+      "insert into lessons (module_id, title, is_published) values ($1, 'Versão 2', true) returning id",
+      [extraModule],
+    );
+    const [{ id: co }] = await q<{ id: string }>("insert into cohorts (course_id, name) values ($1, 'Plug') returning id", [course5]);
+    await q("insert into cohort_lessons (cohort_id, lesson_id, position) values ($1, $2, 0), ($1, $3, 1)", [co, base, extra]);
+    await q("insert into enrollments (user_id, cohort_id, origin) values ($1, $2, 'purchase')", [gil, co]);
+    await q("update courses set certificate_enabled = true where id = $1", [course5]);
+  });
+
+  const canSee = (lesson: string) =>
+    as(db, gil, () => q<{ ok: boolean }>("select can_access_lesson($1) as ok", [lesson])).then((r) => r[0].ok);
+
+  it("sem comprar o extra: vê o curso, não vê o módulo extra; o curso conclui sem ele", async () => {
+    expect(await canSee(base)).toBe(true);
+    expect(await canSee(extra)).toBe(false);
+    await q("insert into lesson_progress (user_id, lesson_id, completed_at) values ($1, $2, now())", [gil, base]);
+    expect((await q<{ ok: boolean }>("select has_completed_course($1, $2) as ok", [gil, course5]))[0].ok).toBe(true);
+    // Aluno não lê os produtos nem cria a própria liberação
+    expect(await as(db, gil, () => q("select * from module_products"))).toHaveLength(0);
+    await as(db, gil, async () => {
+      await expect(
+        db.query("insert into module_grants (user_id, module_id, origin) values ($1, $2, 'manual')", [gil, extraModule]),
+      ).rejects.toThrow(/row-level security/);
+    });
+  });
+
+  it("com o extra: vê o módulo; reembolso tira o acesso", async () => {
+    await q("insert into module_grants (user_id, module_id, origin) values ($1, $2, 'purchase')", [gil, extraModule]);
+    expect(await canSee(extra)).toBe(true);
+    expect(await as(db, gil, () => q("select * from module_grants"))).toHaveLength(1);
+    // Agora o extra conta para concluir
+    expect((await q<{ ok: boolean }>("select has_completed_course($1, $2) as ok", [gil, course5]))[0].ok).toBe(false);
+    await q("update module_grants set status = 'refunded' where user_id = $1", [gil]);
+    expect(await canSee(extra)).toBe(false);
+  });
+
+  it("um produto libera turma OU módulo extra, nunca os dois", async () => {
+    const [{ id: co }] = await q<{ id: string }>("select id from cohorts where course_id = $1", [course5]);
+    await q("insert into module_products (module_id, provider, external_product_id) values ($1, 'kiwify', 'bump-123')", [extraModule]);
+    await expect(
+      db.query("insert into cohort_products (cohort_id, provider, external_product_id) values ($1, 'kiwify', 'bump-123')", [co]),
+    ).rejects.toThrow(/módulo extra/);
+    await q("insert into cohort_products (cohort_id, provider, external_product_id) values ($1, 'kiwify', 'main-999')", [co]);
+    await expect(
+      db.query("insert into module_products (module_id, provider, external_product_id) values ($1, 'kiwify', 'main-999')", [extraModule]),
+    ).rejects.toThrow(/turma/);
+  });
+});

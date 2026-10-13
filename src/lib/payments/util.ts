@@ -27,6 +27,13 @@ export function str(value: unknown): string | null {
   return null;
 }
 
+/** Todos os valores das chaves com esse nome, em qualquer profundidade (ex.: product_id de order bumps). */
+export function deepValues(obj: unknown, key: string, depth = 0): unknown[] {
+  if (obj === null || typeof obj !== "object" || depth > 6) return [];
+  if (Array.isArray(obj)) return obj.flatMap((item) => deepValues(item, key, depth + 1));
+  return Object.entries(obj as Record<string, unknown>).flatMap(([k, v]) => [...(k === key ? [v] : []), ...deepValues(v, key, depth + 1)]);
+}
+
 export function ids(...values: unknown[]): string[] {
   return [...new Set(values.map(str).filter((v): v is string => Boolean(v)))];
 }

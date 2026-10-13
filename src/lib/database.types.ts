@@ -1040,33 +1040,125 @@ export type Database = {
           },
         ];
       };
+      module_grants: {
+        Row: {
+          created_at: string;
+          external_transaction_id: string | null;
+          id: string;
+          module_id: string;
+          origin: Database["public"]["Enums"]["enrollment_origin"];
+          provider: Database["public"]["Enums"]["payment_provider"] | null;
+          status: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          external_transaction_id?: string | null;
+          id?: string;
+          module_id: string;
+          origin: Database["public"]["Enums"]["enrollment_origin"];
+          provider?: Database["public"]["Enums"]["payment_provider"] | null;
+          status?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          external_transaction_id?: string | null;
+          id?: string;
+          module_id?: string;
+          origin?: Database["public"]["Enums"]["enrollment_origin"];
+          provider?: Database["public"]["Enums"]["payment_provider"] | null;
+          status?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "module_grants_module_id_fkey";
+            columns: ["module_id"];
+            isOneToOne: false;
+            referencedRelation: "modules";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "module_grants_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      module_products: {
+        Row: {
+          created_at: string;
+          external_product_id: string;
+          id: string;
+          label: string | null;
+          module_id: string;
+          provider: Database["public"]["Enums"]["payment_provider"];
+        };
+        Insert: {
+          created_at?: string;
+          external_product_id: string;
+          id?: string;
+          label?: string | null;
+          module_id: string;
+          provider: Database["public"]["Enums"]["payment_provider"];
+        };
+        Update: {
+          created_at?: string;
+          external_product_id?: string;
+          id?: string;
+          label?: string | null;
+          module_id?: string;
+          provider?: Database["public"]["Enums"]["payment_provider"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "module_products_module_id_fkey";
+            columns: ["module_id"];
+            isOneToOne: false;
+            referencedRelation: "modules";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       modules: {
         Row: {
+          addon_checkout_url: string | null;
           course_id: string;
           cover_url: string | null;
           created_at: string;
           description: string | null;
           id: string;
+          is_addon: boolean;
           position: number;
           title: string;
           updated_at: string;
         };
         Insert: {
+          addon_checkout_url?: string | null;
           course_id: string;
           cover_url?: string | null;
           created_at?: string;
           description?: string | null;
           id?: string;
+          is_addon?: boolean;
           position?: number;
           title: string;
           updated_at?: string;
         };
         Update: {
+          addon_checkout_url?: string | null;
           course_id?: string;
           cover_url?: string | null;
           created_at?: string;
           description?: string | null;
           id?: string;
+          is_addon?: boolean;
           position?: number;
           title?: string;
           updated_at?: string;
@@ -1405,6 +1497,7 @@ export type Database = {
       };
       enrollment_is_active: { Args: { e: Database["public"]["Tables"]["enrollments"]["Row"] }; Returns: boolean };
       has_completed_course: { Args: { p_course_id: string; p_user_id: string }; Returns: boolean };
+      has_module_access: { Args: { p_module_id: string; p_user_id: string }; Returns: boolean };
       is_admin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_enrolled_in_cohort: { Args: { p_cohort_id: string }; Returns: boolean };
       issue_certificate: {

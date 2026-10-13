@@ -26,20 +26,30 @@ export function moduleStats(lessons: LessonItem[]) {
 export function ModuleCard({ module, index, lessons, href }: { module: ModuleItem; index: number; lessons: LessonItem[]; href: string }) {
   const stats = moduleStats(lessons);
   const complete = stats.total > 0 && stats.done === stats.total;
+  // Extra não comprado: o card abre a página do módulo (mostra o que tem dentro e o botão de desbloquear).
+  const extraLocked = module.isAddon && !module.owned;
 
   const body = (
     <>
       <div className="relative">
         <Cover src={module.coverUrl} className="aspect-video" />
-        {!module.coverUrl ? (
+        {!module.coverUrl && !extraLocked && !stats.locked ? (
           <span className="font-display text-fg-muted/40 absolute inset-0 flex items-center justify-center text-7xl font-bold tabular-nums select-none">
             {String(index).padStart(2, "0")}
           </span>
         ) : null}
-        <span className="bg-bg/80 text-fg-soft absolute top-3 left-3 rounded-md px-2 py-1 text-[11px] font-bold tracking-wide uppercase">
-          Módulo {index}
+        <span className="absolute top-3 left-3 flex gap-1.5">
+          <span className="bg-bg/80 text-fg-soft rounded-md px-2 py-1 text-[11px] font-bold tracking-wide uppercase">Módulo {index}</span>
+          {module.isAddon ? (
+            <span className="bg-accent rounded-md px-2 py-1 text-[11px] font-bold tracking-wide text-white uppercase">Extra</span>
+          ) : null}
         </span>
-        {stats.locked ? (
+        {extraLocked ? (
+          <span className="bg-bg/70 absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
+            <LockIcon width={22} height={22} className="text-fg-soft" />
+            <span className="text-fg-soft px-3 text-xs font-semibold">Conteúdo extra · toque para ver</span>
+          </span>
+        ) : stats.locked ? (
           <span className="bg-bg/70 absolute inset-0 flex flex-col items-center justify-center gap-1.5 text-center">
             <LockIcon width={22} height={22} className="text-fg-soft" />
             <span className="text-fg-soft px-3 text-xs font-semibold">
@@ -71,9 +81,11 @@ export function ModuleCard({ module, index, lessons, href }: { module: ModuleIte
   const className = cn(
     "group border-border bg-surface flex flex-col overflow-hidden rounded-[var(--radius-card)] border transition-all",
     "shadow-[0_10px_30px_-18px_rgba(0,0,0,0.9)]",
-    stats.locked ? "opacity-80" : "hover:border-accent/70 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-16px_rgba(0,0,0,0.95)]",
+    stats.locked && !extraLocked
+      ? "opacity-80"
+      : "hover:border-accent/70 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-16px_rgba(0,0,0,0.95)]",
   );
-  return stats.locked ? (
+  return stats.locked && !extraLocked ? (
     <div className={className} aria-disabled>
       {body}
     </div>

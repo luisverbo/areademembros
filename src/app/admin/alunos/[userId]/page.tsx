@@ -11,8 +11,8 @@ import { daysSince, formatDateTime } from "@/lib/datetime";
 import { formatDuration } from "@/lib/forms";
 import { enrollmentOriginLabels, enrollmentStatusLabels, providerLabels } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
-import { deleteEnrollment, removeUnlock } from "../actions";
-import { EnrollmentForm, EnrollStudentForm, ProfileForm, UnlockForm } from "./forms";
+import { deleteEnrollment, removeUnlock, revokeModule } from "../actions";
+import { EnrollmentForm, EnrollStudentForm, GrantModuleForm, ProfileForm, UnlockForm } from "./forms";
 
 type Props = PageProps<"/admin/alunos/[userId]">;
 
@@ -28,7 +28,15 @@ export default async function StudentPage({ params }: Props) {
   const { userId } = await params;
   const supabase = await createClient();
 
-  const [{ data: profile }, { data: enrollments }, { data: unlocks }, { data: cohorts }, { data: courses }] = await Promise.all([
+  const [
+    { data: profile },
+    { data: enrollments },
+    { data: unlocks },
+    { data: cohorts },
+    { data: courses },
+    { data: moduleGrants },
+    { data: addonModules },
+  ] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
     supabase
       .from("enrollments")
@@ -43,6 +51,12 @@ export default async function StudentPage({ params }: Props) {
       .order("showcase_order")
       .order("position", { referencedTable: "modules" })
       .order("position", { referencedTable: "modules.lessons" }),
+    supabase
+      .from("module_grants")
+      .select("module_id, origin, status, provider, created_at, module:modules(title, course:courses(title))")
+      .eq("user_id", userId)
+      .order("created_at"),
+    supabase.from("modules").select("id, title, course:courses(title)").eq("is_addon", true).order("title"),
   ]);
   if (!profile) notFound();
 
@@ -211,6 +225,41 @@ export default async function StudentPage({ params }: Props) {
             </ul>
           ) : null}
           <UnlockForm userId={profile.id} lessons={lessonOptions} />
+        </Card>
+
+        <Card>
+          <CardHeader title="Módulos extras (order bump)" description="Liberados pela compra do produto ligado ao módulo, ou aqui à mão." />
+          {moduleGrants?.length ? (
+            <ul className="divide-border border-border mb-4 divide-y rounded-lg border">
+              {moduleGrants.map((g) => (
+                <li key={g.module_id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                  <span className="min-w-0 truncate">
+                    {g.module?.course?.title} · <b>{g.module?.title}</b>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    {g.status === "active" ? (
+                      <Badge>{g.origin === "purchase" ? "Compra" : "Manual"}</Badge>
+                    ) : (
+                      <Badge tone="accent">Reembolsado</Badge>
+                    )}
+                    <form action={revokeModule.bind(null, profile.id, g.module_id)}>
+                      <ConfirmSubmit variant="ghost" size="sm" message="Retirar este módulo extra do aluno?">
+                        Retirar
+                      </ConfirmSubmit>
+                    </form>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {addonModules?.length ? (
+            <GrantModuleForm
+              userId={profile.id}
+              modules={addonModules.map((m) => ({ id: m.id, label: `${m.course?.title ?? ""} · ${m.title}` }))}
+            />
+          ) : (
+            <p className="text-fg-muted text-sm">Nenhum módulo extra criado ainda (em Cursos → Módulos e aulas).</p>
+          )}
         </Card>
       </div>
     </>

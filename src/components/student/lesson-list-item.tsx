@@ -51,7 +51,7 @@ export function LessonListItem({
                 {!compact ? <Countdown to={lesson.releaseAt} /> : null}
               </>
             ) : (
-              <span>Bloqueada</span>
+              <span>{lesson.addonLocked ? "Conteúdo extra" : "Bloqueada"}</span>
             )
           ) : (
             <>

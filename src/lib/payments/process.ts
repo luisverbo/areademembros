@@ -75,9 +75,21 @@ async function cohortsForProducts(admin: Admin, event: PurchaseEvent) {
   return data ?? [];
 }
 
+async function modulesForProducts(admin: Admin, event: PurchaseEvent) {
+  if (!event.productIds.length) return [];
+  const { data } = await admin
+    .from("module_products")
+    .select("module_id, module:modules(title)")
+    .eq("provider", event.provider)
+    .in("external_product_id", event.productIds);
+  return data ?? [];
+}
+
 async function applyApproved(admin: Admin, event: PurchaseEvent): Promise<Applied> {
-  const links = await cohortsForProducts(admin, event);
-  if (!links.length) return { status: "ignored", note: `Produto não ligado a nenhuma turma (${event.productIds.join(", ") || "sem ID"})` };
+  const [links, extras] = await Promise.all([cohortsForProducts(admin, event), modulesForProducts(admin, event)]);
+  if (!links.length && !extras.length) {
+    return { status: "ignored", note: `Produto não ligado a nenhuma turma nem módulo extra (${event.productIds.join(", ") || "sem ID"})` };
+  }
   if (!event.buyer.email) throw new Error("Compra sem e-mail do comprador");
 
   const userId = await findOrCreateUser({
@@ -112,6 +124,22 @@ async function applyApproved(admin: Admin, event: PurchaseEvent): Promise<Applie
   }
   if (newlyActive.length) await revokeSessionsOnFirstPaidAccess(userId);
 
+  // Módulos extras (order bump): liberam só o módulo, dentro do curso.
+  for (const extra of extras) {
+    const { error } = await admin.from("module_grants").upsert(
+      {
+        user_id: userId,
+        module_id: extra.module_id,
+        origin: "purchase",
+        status: "active",
+        provider: event.provider,
+        external_transaction_id: event.transactionId ?? null,
+      },
+      { onConflict: "user_id,module_id" },
+    );
+    if (error) throw new Error(`module_grants: ${error.message}`);
+  }
+
   const email = event.buyer.email;
   return {
     status: "processed",
@@ -137,7 +165,16 @@ async function applyApproved(admin: Admin, event: PurchaseEvent): Promise<Applie
 
 async function applyRefund(admin: Admin, event: PurchaseEvent): Promise<Applied> {
   let refunded = 0;
+  let extrasRefunded = 0;
   if (event.transactionId) {
+    const { data: byTransaction } = await admin
+      .from("module_grants")
+      .update({ status: "refunded" })
+      .eq("provider", event.provider)
+      .eq("external_transaction_id", event.transactionId)
+      .eq("status", "active")
+      .select("id");
+    extrasRefunded = byTransaction?.length ?? 0;
     const { data } = await admin
       .from("enrollments")
       .update({ status: "refunded" })
@@ -167,9 +204,29 @@ async function applyRefund(admin: Admin, event: PurchaseEvent): Promise<Applied>
     }
   }
 
-  if (!refunded) return { status: "ignored", note: "Nenhuma matrícula ativa encontrada para esta venda" };
+  // Módulos extras do mesmo pedido (ou do produto do bump, se o reembolso veio separado).
+  const extras = await modulesForProducts(admin, event);
+  if (extras.length && event.buyer.email) {
+    const { data: profile } = await admin.from("profiles").select("id").eq("email", event.buyer.email).maybeSingle();
+    if (profile) {
+      const { data } = await admin
+        .from("module_grants")
+        .update({ status: "refunded" })
+        .eq("user_id", profile.id)
+        .in(
+          "module_id",
+          extras.map((e) => e.module_id),
+        )
+        .eq("status", "active")
+        .select("id");
+      extrasRefunded += data?.length ?? 0;
+    }
+  }
+
+  if (!refunded && !extrasRefunded) return { status: "ignored", note: "Nenhuma matrícula ativa encontrada para esta venda" };
   return {
     status: "processed",
+    note: extrasRefunded && !refunded ? "Reembolso só do módulo extra" : undefined,
     after: () =>
       dispatchEvent("purchase.refunded", {
         provider: event.provider,

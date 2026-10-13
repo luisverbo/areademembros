@@ -54,7 +54,21 @@ export default async function LessonPage({ params, searchParams }: Props) {
         <div className="border-border bg-surface flex aspect-video flex-col items-center justify-center gap-3 rounded-[var(--radius-card)] border px-6 text-center">
           <LockIcon width={28} height={28} className="text-fg-soft" />
           <h1 className="text-xl font-bold md:text-2xl">{lesson.title}</h1>
-          {lesson.releaseAt ? (
+          {lesson.addonLocked ? (
+            <>
+              <p className="text-fg-soft">Esta aula faz parte de um conteúdo extra do curso.</p>
+              {view.modules.find((m) => m.id === lesson.moduleId)?.addonCheckoutUrl ? (
+                <a
+                  href={view.modules.find((m) => m.id === lesson.moduleId)!.addonCheckoutUrl!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={buttonClasses("primary", "md", "mt-2")}
+                >
+                  Desbloquear este extra
+                </a>
+              ) : null}
+            </>
+          ) : lesson.releaseAt ? (
             <>
               <p className="text-fg-soft">Libera {formatReleaseDate(lesson.releaseAt)}</p>
               <Countdown to={lesson.releaseAt} className="text-fg-muted text-sm" />

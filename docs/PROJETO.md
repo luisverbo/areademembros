@@ -404,3 +404,12 @@ Ainda abertas:
 - **Admin:** em Cursos → Módulos e aulas, cada módulo tem "Nome, descrição e banner do módulo" (banner 1280×720). No curso, "Página do curso" escolhe entre **Módulos em banners** (padrão) e **Lista simples de aulas**.
 - **Página da aula:** a lista lateral agora é por módulo, abrindo e fechando (o módulo da aula atual começa aberto), com numeração contínua das aulas.
 - **Banco:** `supabase/setup/11-atualizacao-modulos.sql`.
+
+## 21. Módulos extras / order bump (13/10/2026)
+
+- **Ideia:** o order bump vira um **módulo do próprio curso**, marcado como "extra pago". Quem não comprou vê o módulo com cadeado e o selo EXTRA, pode abrir para ver as aulas e tem o botão "Desbloquear este extra" (link opcional). Quem comprou assiste normalmente.
+- **Admin:** Cursos → Módulos e aulas → "Módulo extra (order bump)": liga o módulo como extra, link para comprar depois e os produtos (plataforma + ID) que liberam o módulo. Ficha do aluno: "Módulos extras" para liberar ou retirar à mão.
+- **Webhook:** a compra libera a turma (produto principal) e os módulos extras (produto do bump). Funciona com o bump no mesmo aviso da compra (a Kiwify não documenta o formato; o site procura o `product_id` em qualquer parte do aviso) ou em aviso separado. Reembolso do pedido retira os extras desse pedido; reembolso só do bump retira só o extra.
+- **Regras:** um produto libera uma turma **ou** um módulo extra, nunca os dois. Progresso, certificado e "concluiu o curso" não contam o extra de quem não comprou.
+- **Banco:** `supabase/setup/12-atualizacao-order-bump.sql`.
+- **A conferir na primeira venda real:** em Integrações → Kiwify → últimos avisos, ver se o bump veio no mesmo aviso ou separado. Nos dois casos funciona.

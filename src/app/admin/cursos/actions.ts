@@ -228,3 +228,64 @@ export async function moveLesson(lessonId: string, courseId: string, direction: 
   await move("lessons", lessonId, direction);
   revalidatePath(`/admin/cursos/${courseId}`);
 }
+
+// ---------------------------------------------------------------------------
+// Módulo extra (order bump)
+// ---------------------------------------------------------------------------
+
+export async function updateModuleAddon(
+  moduleId: string,
+  courseId: string,
+  _prev: FormState | undefined,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+  const isAddon = formData.get("is_addon") === "on";
+  const raw = String(formData.get("addon_checkout_url") ?? "").trim();
+  if (raw && !/^https:\/\/\S+$/.test(raw)) return { ok: false, errors: { addon_checkout_url: ["Use um link https://."] } };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("modules")
+    .update({ is_addon: isAddon, addon_checkout_url: raw || null })
+    .eq("id", moduleId);
+  if (error) return { ok: false, message: dbErrorMessage(error) };
+  revalidatePath(`/admin/cursos/${courseId}`);
+  return { ok: true, message: isAddon ? "Módulo extra: só quem comprar vê." : "Módulo normal: todos da turma veem." };
+}
+
+const moduleProductSchema = z.object({
+  provider: z.enum(["kiwify", "hotmart", "yampi", "mercadopago", "asaas"], "Escolha a plataforma."),
+  external_product_id: formFields.text("Informe o ID do produto na plataforma."),
+  label: formFields.optionalText(),
+});
+
+export async function addModuleProduct(
+  moduleId: string,
+  courseId: string,
+  _prev: FormState | undefined,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+  const parsed = parseForm(moduleProductSchema, formData);
+  if (!parsed.success) return parsed.state;
+  const supabase = await createClient();
+  const { error } = await supabase.from("module_products").insert({ ...parsed.data, module_id: moduleId });
+  if (error) {
+    return {
+      ok: false,
+      message:
+        error.code === "23505"
+          ? "Esse produto já está ligado a outra turma ou módulo. Cada produto libera uma coisa só."
+          : dbErrorMessage(error),
+    };
+  }
+  revalidatePath(`/admin/cursos/${courseId}`);
+  return { ok: true, message: "Produto ligado ao módulo extra." };
+}
+
+export async function removeModuleProduct(productId: string, courseId: string) {
+  await requireAdmin();
+  const supabase = await createClient();
+  await supabase.from("module_products").delete().eq("id", productId);
+  revalidatePath(`/admin/cursos/${courseId}`);
+}

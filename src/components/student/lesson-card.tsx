@@ -22,7 +22,7 @@ export function LessonCard({ lesson, eyebrow, fluid, index }: { lesson: LessonIt
           <div className="bg-bg/75 absolute inset-0 flex flex-col items-center justify-center gap-1.5 rounded-[var(--radius-card)] text-center">
             <LockIcon width={20} height={20} className="text-fg-soft" />
             <span className="text-fg-soft px-3 text-xs font-semibold">
-              {lesson.releaseAt ? `Libera ${formatReleaseDate(lesson.releaseAt)}` : "Bloqueada"}
+              {lesson.addonLocked ? "Conteúdo extra" : lesson.releaseAt ? `Libera ${formatReleaseDate(lesson.releaseAt)}` : "Bloqueada"}
             </span>
           </div>
         ) : (

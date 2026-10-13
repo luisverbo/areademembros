@@ -203,3 +203,19 @@ describe("Asaas", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+describe("Kiwify com order bump", () => {
+  it("pega o product_id dos bumps em qualquer parte do aviso, com o principal primeiro", async () => {
+    const order = {
+      order_id: "o-1",
+      order_status: "paid",
+      webhook_event_type: "order_approved",
+      Product: { product_id: "plug-main", product_name: "Plug Editor" },
+      order_bumps: [{ product_id: "plug-updates" }, { Product: { product_id: "plug-support" } }],
+      Customer: { full_name: "Ana", email: "ana@email.com" },
+    };
+    const sig = createHmac("sha1", "kiwi-token").update(JSON.stringify(order)).digest("hex");
+    const parsed = await kiwify.parse(ctx(order, {}, `signature=${sig}`));
+    expect(parsed?.productIds).toEqual(["plug-main", "plug-updates", "plug-support"]);
+  });
+});
