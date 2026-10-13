@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LinkedText } from "@/components/ui/linked-text";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChevronIcon, FileIcon, LockIcon } from "@/components/icons";
@@ -172,7 +173,11 @@ export default async function LessonPage({ params, searchParams }: Props) {
               ) : null}
             </div>
 
-            {details?.description ? <p className="text-fg-soft max-w-3xl whitespace-pre-line">{details.description}</p> : null}
+            {details?.description ? (
+              <p className="text-fg-soft max-w-3xl whitespace-pre-line">
+                <LinkedText text={details.description} />
+              </p>
+            ) : null}
             {summaryPoints.length ? <LessonSummary lessonId={lessonId} points={summaryPoints} checklist={checklist} /> : null}
           </div>
         </div>

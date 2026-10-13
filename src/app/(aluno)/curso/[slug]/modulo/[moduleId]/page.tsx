@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LinkedText } from "@/components/ui/linked-text";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChevronIcon, PlayIcon } from "@/components/icons";
@@ -52,7 +53,11 @@ export default async function ModulePage({ params }: Props) {
             <span className="text-fg-soft">Módulo {index + 1}</span>
           </nav>
           <h1 className="max-w-3xl text-3xl leading-tight font-bold md:text-5xl">{mod.title}</h1>
-          {mod.description ? <p className="text-fg-soft max-w-2xl whitespace-pre-line md:text-lg">{mod.description}</p> : null}
+          {mod.description ? (
+            <p className="text-fg-soft max-w-2xl whitespace-pre-line md:text-lg">
+              <LinkedText text={mod.description} />
+            </p>
+          ) : null}
           <p className="text-fg-muted text-sm tabular-nums">
             {lessons.length} aula{lessons.length === 1 ? "" : "s"}
             {totalSeconds ? ` · ${formatDuration(totalSeconds)}` : ""} · {stats.done} concluída{stats.done === 1 ? "" : "s"}

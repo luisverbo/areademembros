@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LinkedText } from "@/components/ui/linked-text";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Brand } from "@/components/brand";
@@ -60,7 +61,11 @@ export default async function FreeCoursePage({ params, searchParams }: Props) {
           <div className="flex flex-col gap-4">
             <span className="bg-accent w-fit rounded-md px-2 py-1 text-[11px] font-bold tracking-wide text-white uppercase">Grátis</span>
             <h1 className="text-3xl font-bold md:text-5xl">{course.title}</h1>
-            {course.description ? <p className="text-fg-soft max-w-xl whitespace-pre-line">{course.description}</p> : null}
+            {course.description ? (
+              <p className="text-fg-soft max-w-xl whitespace-pre-line">
+                <LinkedText text={course.description} />
+              </p>
+            ) : null}
             {lessonCount ? (
               <p className="text-fg-muted text-sm">
                 {lessonCount} {lessonCount === 1 ? "aula" : "aulas"} liberadas na hora

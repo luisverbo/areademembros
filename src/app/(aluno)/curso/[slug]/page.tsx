@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LinkedText } from "@/components/ui/linked-text";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PlayIcon } from "@/components/icons";
@@ -75,7 +76,9 @@ export default async function CoursePage({ params }: Props) {
           </div>
           <h1 className="max-w-3xl text-4xl leading-[1.05] font-bold md:text-6xl">{course.title}</h1>
           {course.description ? (
-            <p className="text-fg-soft max-w-2xl text-base whitespace-pre-line md:text-lg">{course.description}</p>
+            <p className="text-fg-soft max-w-2xl text-base whitespace-pre-line md:text-lg">
+              <LinkedText text={course.description} />
+            </p>
           ) : null}
           {view.access !== "locked" && progress.total ? (
             <div className="flex max-w-sm flex-col gap-1.5">
