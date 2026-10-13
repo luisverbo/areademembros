@@ -26,7 +26,7 @@ export default async function CoursePage({ params }: PageProps<"/admin/cursos/[c
   const { courseId } = await params;
   const supabase = await createClient();
 
-  const [{ data: course }, { data: modules }, { data: cohorts }, { data: otherCourses }] = await Promise.all([
+  const [{ data: course }, full, { data: cohorts }, { data: otherCourses }] = await Promise.all([
     supabase.from("courses").select("*").eq("id", courseId).maybeSingle(),
     supabase
       .from("modules")
@@ -42,6 +42,30 @@ export default async function CoursePage({ params }: PageProps<"/admin/cursos/[c
     supabase.from("cohorts").select("id, name, release_mode, is_active, enrollments(count)").eq("course_id", courseId).order("created_at"),
     supabase.from("courses").select("id, title").neq("id", courseId).order("showcase_order"),
   ]);
+
+  // Banco sem as atualizações de módulos (passos 25 e 26): mostra módulos e aulas do jeito básico e avisa.
+  let modules = full.data;
+  const dbOutdated = Boolean(full.error);
+  if (full.error) {
+    console.error("modules (banco desatualizado?)", full.error.message);
+    const { data: basic } = await supabase
+      .from("modules")
+      .select("id, title, position, lessons(id, title, position, is_published, is_free, duration_seconds)")
+      .eq("course_id", courseId)
+      .order("position")
+      .order("created_at")
+      .order("position", { referencedTable: "lessons" })
+      .order("created_at", { referencedTable: "lessons" });
+    modules = (basic ?? []).map((m) => ({
+      ...m,
+      description: null,
+      cover_url: null,
+      is_addon: false,
+      addon_checkout_url: null,
+      module_products: [],
+      module_grants: [],
+    }));
+  }
   if (!course) notFound();
 
   return (
@@ -61,7 +85,13 @@ export default async function CoursePage({ params }: PageProps<"/admin/cursos/[c
       <div className="flex flex-col gap-6">
         <CourseForm siteUrl={env.siteUrl} course={course} cohorts={cohorts ?? []} otherCourses={otherCourses ?? []} />
 
-        <ModulesEditor courseId={course.id} modules={modules ?? []} />
+        {dbOutdated ? (
+          <p role="alert" className="border-accent/50 bg-accent/10 rounded-lg border px-4 py-3 text-sm">
+            O banco de dados está desatualizado: rode os passos <b>25</b> e <b>26</b> da página de instalação (SQL Editor do Supabase).
+            Enquanto isso, dá para criar módulos e aulas normalmente; banner do módulo e order bump aparecem depois.
+          </p>
+        ) : null}
+        <ModulesEditor courseId={course.id} modules={modules ?? []} configurable={!dbOutdated} />
 
         <Card>
           <CardHeader

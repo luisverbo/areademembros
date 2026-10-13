@@ -83,17 +83,43 @@ export type CourseView = {
 const COURSE_FIELDS =
   "id, slug, title, description, cover_vertical_url, cover_horizontal_url, banner_url, is_free, showcase_order, sales_cohort_id, is_published, preview_video_provider, preview_video_id, preview_start_seconds, preview_end_seconds, certificate_enabled, next_course_id, module_layout";
 
-/** Cursos publicados da vitrine, na ordem definida no admin. */
-export const getPublishedCourses = cache(async (): Promise<Course[]> => {
+// Campos que existem desde a primeira versão do banco (plano B quando falta rodar algum SQL de atualização).
+const BASE_COURSE_FIELDS =
+  "id, slug, title, description, cover_vertical_url, cover_horizontal_url, banner_url, is_free, showcase_order, sales_cohort_id, is_published";
+const COURSE_DEFAULTS = {
+  preview_video_provider: null,
+  preview_video_id: null,
+  preview_start_seconds: null,
+  preview_end_seconds: null,
+  certificate_enabled: false,
+  next_course_id: null,
+  module_layout: "cards",
+} as const;
+
+type Filter = { column: "is_published" | "slug" | "id"; value: string | boolean };
+
+/** Busca cursos; se o banco estiver sem alguma coluna nova, busca o básico e completa com o padrão. */
+async function fetchCourses(filter: Filter): Promise<Course[]> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const full = await supabase
     .from("courses")
     .select(COURSE_FIELDS)
-    .eq("is_published", true)
+    .eq(filter.column, filter.value)
     .order("showcase_order")
     .order("created_at");
-  return data ?? [];
-});
+  if (!full.error) return full.data ?? [];
+  console.error("courses (banco desatualizado?)", full.error.message);
+  const { data } = await supabase
+    .from("courses")
+    .select(BASE_COURSE_FIELDS)
+    .eq(filter.column, filter.value)
+    .order("showcase_order")
+    .order("created_at");
+  return (data ?? []).map((c) => ({ ...COURSE_DEFAULTS, ...c }) as Course);
+}
+
+/** Cursos publicados da vitrine, na ordem definida no admin. */
+export const getPublishedCourses = cache(async (): Promise<Course[]> => fetchCourses({ column: "is_published", value: true }));
 
 type ActiveEnrollment = { cohort: Cohort & { course_id: string } };
 
@@ -152,7 +178,7 @@ export async function getCourseView(course: Course, profile: Profile): Promise<C
 
   const access: Access = enrollment ? "enrolled" : profile.role === "admin" ? "admin" : course.is_free ? "free" : "locked";
 
-  const { data: modules } = await supabase
+  const full = await supabase
     .from("modules")
     .select(
       "id, title, description, cover_url, is_addon, addon_checkout_url, position, lessons(id, title, description, thumbnail_url, duration_seconds, is_free, position)",
@@ -160,6 +186,18 @@ export async function getCourseView(course: Course, profile: Profile): Promise<C
     .eq("course_id", course.id)
     .order("position")
     .order("position", { referencedTable: "lessons" });
+  let modules = full.data;
+  if (full.error) {
+    // Banco ainda sem as colunas novas dos módulos (falta rodar o SQL de atualização): segue com o básico.
+    console.error("modules (banco desatualizado?)", full.error.message);
+    const { data: basic } = await supabase
+      .from("modules")
+      .select("id, title, position, lessons(id, title, description, thumbnail_url, duration_seconds, is_free, position)")
+      .eq("course_id", course.id)
+      .order("position")
+      .order("position", { referencedTable: "lessons" });
+    modules = (basic ?? []).map((m) => ({ ...m, description: null, cover_url: null, is_addon: false, addon_checkout_url: null }));
+  }
 
   const meta = new Map(
     (modules ?? []).flatMap((m) =>
@@ -280,17 +318,14 @@ export async function getMyCourseViews(profile: Profile): Promise<CourseView[]> 
 }
 
 export async function getCourseBySlug(slug: string): Promise<Course | null> {
-  const supabase = await createClient();
-  const { data } = await supabase.from("courses").select(COURSE_FIELDS).eq("slug", slug).maybeSingle();
-  return data;
+  return (await fetchCourses({ column: "slug", value: slug }))[0] ?? null;
 }
 
 export async function getCourseByLessonId(lessonId: string): Promise<Course | null> {
   const supabase = await createClient();
   const { data: courseId } = await supabase.rpc("lesson_course_id", { p_lesson_id: lessonId });
   if (!courseId) return null;
-  const { data } = await supabase.from("courses").select(COURSE_FIELDS).eq("id", courseId).maybeSingle();
-  return data;
+  return (await fetchCourses({ column: "id", value: courseId }))[0] ?? null;
 }
 
 export type Recommendation = { course: Course; reason: "next" | "peers" | "showcase" };

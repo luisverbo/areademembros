@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/field";
 import { formatDuration } from "@/lib/forms";
 import { ImageUpload } from "@/components/admin/image-upload";
 import { Textarea } from "@/components/ui/field";
-import { createLesson, createModule, deleteModule, moveLesson, moveModule, updateModule } from "../actions";
+import { createLesson, createModule, deleteModule, moveLesson, moveModule, renameModule, updateModule } from "../actions";
 import { ModuleAddon } from "./module-addon";
 
 type Lesson = { id: string; title: string; position: number; is_published: boolean; is_free: boolean; duration_seconds: number | null };
@@ -32,7 +32,8 @@ type Module = {
 
 const arrow = "flex size-7 items-center justify-center rounded-md text-fg-muted hover:bg-border hover:text-fg disabled:opacity-30";
 
-export function ModulesEditor({ courseId, modules }: { courseId: string; modules: Module[] }) {
+/** `configurable` = falso quando o banco ainda não tem as colunas novas (falta rodar o SQL de atualização). */
+export function ModulesEditor({ courseId, modules, configurable = true }: { courseId: string; modules: Module[]; configurable?: boolean }) {
   return (
     <Card>
       <CardHeader title="Módulos e aulas" description="A ordem aqui é a ordem padrão do curso." />
@@ -52,12 +53,13 @@ export function ModulesEditor({ courseId, modules }: { courseId: string; modules
                   </button>
                 </form>
               </div>
-              <p className="min-w-0 flex-1 truncate font-semibold">
-                <span className="text-fg-muted mr-1.5 tabular-nums">{mi + 1}.</span>
-                {module.title}
-              </p>
+              <form action={renameModule.bind(null, module.id, courseId)} className="flex min-w-48 flex-1 gap-2">
+                <Input name="title" defaultValue={module.title} aria-label="Nome do módulo" className="h-8 font-semibold" />
+                <Button type="submit" size="sm" variant="secondary">
+                  Renomear
+                </Button>
+              </form>
               {module.is_addon ? <Badge tone="accent">Extra pago</Badge> : null}
-              {module.cover_url ? <Badge>Com banner</Badge> : <Badge tone="muted">Sem banner</Badge>}
               <form action={deleteModule.bind(null, module.id, courseId)}>
                 <ConfirmSubmit
                   size="sm"
@@ -68,54 +70,6 @@ export function ModulesEditor({ courseId, modules }: { courseId: string; modules
                 </ConfirmSubmit>
               </form>
             </div>
-
-            <details className="border-border group border-b">
-              <summary className="text-fg-soft hover:text-fg flex cursor-pointer list-none items-center justify-between px-3 py-2 text-sm font-medium">
-                <span>Nome, descrição e banner do módulo</span>
-                <span className="text-fg-muted text-xs">editar</span>
-              </summary>
-              <form action={updateModule.bind(null, module.id, courseId)} className="grid gap-3 p-3 md:grid-cols-[1fr_260px]">
-                <div className="flex flex-col gap-3">
-                  <Input name="title" defaultValue={module.title} aria-label="Nome do módulo" required />
-                  <Textarea
-                    name="description"
-                    defaultValue={module.description ?? ""}
-                    aria-label="Descrição do módulo"
-                    placeholder="Uma frase sobre o que este módulo ensina (aparece no banner)."
-                    className="min-h-20"
-                    maxLength={600}
-                  />
-                  <Button type="submit" size="sm" variant="secondary" className="self-start">
-                    Salvar módulo
-                  </Button>
-                </div>
-                <ImageUpload
-                  name="cover_url"
-                  label="Banner do módulo (16:9)"
-                  folder={`courses/${courseId}/modules/${module.id}`}
-                  defaultUrl={module.cover_url}
-                  aspect={16 / 9}
-                  hint="1280×720. Clique em Salvar módulo para aplicar."
-                />
-              </form>
-            </details>
-
-            <details className="border-border group border-b" open={module.is_addon && !module.module_products.length}>
-              <summary className="text-fg-soft hover:text-fg flex cursor-pointer list-none items-center justify-between px-3 py-2 text-sm font-medium">
-                <span>Módulo extra (order bump)</span>
-                <span className="text-fg-muted text-xs">
-                  {module.is_addon ? `${module.module_products.length} produto(s)` : "desligado"}
-                </span>
-              </summary>
-              <ModuleAddon
-                courseId={courseId}
-                moduleId={module.id}
-                isAddon={module.is_addon}
-                checkoutUrl={module.addon_checkout_url}
-                products={module.module_products}
-                grants={module.module_grants[0]?.count ?? 0}
-              />
-            </details>
 
             <ul className="divide-border divide-y">
               {module.lessons.map((lesson, li) => (
@@ -155,6 +109,50 @@ export function ModulesEditor({ courseId, modules }: { courseId: string; modules
                 + Aula
               </Button>
             </form>
+
+            {configurable ? (
+              <details className="border-border group border-t">
+                <summary className="text-fg-muted hover:text-fg flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-medium">
+                  <span className="transition-transform group-open:rotate-90">▸</span>
+                  Configurar módulo (banner, descrição, order bump)
+                  {module.cover_url ? <span className="text-fg-soft">· com banner</span> : null}
+                </summary>
+                <form action={updateModule.bind(null, module.id, courseId)} className="grid gap-3 p-3 md:grid-cols-[1fr_260px]">
+                  <input type="hidden" name="title" value={module.title} />
+                  <div className="flex flex-col gap-3">
+                    <Textarea
+                      name="description"
+                      defaultValue={module.description ?? ""}
+                      aria-label="Descrição do módulo"
+                      placeholder="Uma frase sobre o que este módulo ensina (aparece no banner do módulo para o aluno)."
+                      className="min-h-20"
+                      maxLength={600}
+                    />
+                    <Button type="submit" size="sm" variant="secondary" className="self-start">
+                      Salvar banner e descrição
+                    </Button>
+                  </div>
+                  <ImageUpload
+                    name="cover_url"
+                    label="Banner do módulo (16:9)"
+                    folder={`courses/${courseId}/modules/${module.id}`}
+                    defaultUrl={module.cover_url}
+                    aspect={16 / 9}
+                    hint="1280×720. Depois clique em Salvar banner e descrição."
+                  />
+                </form>
+                <div className="border-border border-t">
+                  <ModuleAddon
+                    courseId={courseId}
+                    moduleId={module.id}
+                    isAddon={module.is_addon}
+                    checkoutUrl={module.addon_checkout_url}
+                    products={module.module_products}
+                    grants={module.module_grants[0]?.count ?? 0}
+                  />
+                </div>
+              </details>
+            ) : null}
           </div>
         ))}
 

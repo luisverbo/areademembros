@@ -132,6 +132,15 @@ export async function createModule(courseId: string, formData: FormData) {
   revalidatePath(`/admin/cursos/${courseId}`);
 }
 
+export async function renameModule(moduleId: string, courseId: string, formData: FormData) {
+  await requireAdmin();
+  const title = String(formData.get("title") ?? "").trim();
+  if (!title) return;
+  const supabase = await createClient();
+  await supabase.from("modules").update({ title }).eq("id", moduleId);
+  revalidatePath(`/admin/cursos/${courseId}`);
+}
+
 export async function updateModule(moduleId: string, courseId: string, formData: FormData) {
   await requireAdmin();
   const title = String(formData.get("title") ?? "").trim();

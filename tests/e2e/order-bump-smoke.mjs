@@ -200,9 +200,11 @@ await step("admin libera o extra à mão na ficha do aluno", async () => {
   assert(after.grants["Suporte via WhatsApp"] === "active", JSON.stringify(after.grants));
   await admin.goto(`${BASE}/admin/cursos/${course.id}`);
   await admin.getByText("Extra pago", { exact: true }).first().waitFor();
-  await admin.getByText("Módulo extra (order bump)").nth(1).click();
+  await admin.getByText("Configurar módulo").nth(1).click();
   await admin.getByText("e2e-plug-upd").waitFor();
   await admin.screenshot({ path: `${SHOTS}/bump-admin.png`, caret: "initial", fullPage: true });
+  await admin.getByRole("heading", { name: "Módulos e aulas" }).scrollIntoViewIfNeeded();
+  await admin.screenshot({ path: `${SHOTS}/bump-admin-editor.png`, caret: "initial" });
   await admin.close();
 });
 
